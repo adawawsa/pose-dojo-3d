@@ -10,7 +10,7 @@ let AREAS = [];
 let WORLD_END = 1;
 
 const ASSET_SRCS = {
-  pixelHero: "assets/pixel-hero-sheet-v1.png",
+  pixelHero: "assets/pixel-hero-sheet-v1.png?v=pixel-02",
 };
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -220,7 +220,7 @@ async function startRun() {
   els.start.querySelector("span").textContent = "読込中…";
   await loadAssets();
   els.start.disabled = false;
-  els.start.querySelector("span").textContent = "師範ワールドへ";
+  els.start.querySelector("span").textContent = "8BITワールドへ";
   cancelAnimationFrame(frame);
   resetState();
   initAudio();
