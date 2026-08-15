@@ -28,7 +28,7 @@
         <div class="action-stamp">2D<br><b>ACTION</b></div>
         <p class="lead">走れ。跳べ。殴れ。<br><strong>世界も、ルールも、毎回変わる。</strong></p>
         <button id="start-button" class="start-button" type="button"><span>師範ワールドへ</span><small>START ACTION</small><b>→</b></button>
-        <div class="control-strip"><span><kbd>十字キー</kbd> 移動・ジャンプ</span><span><kbd>Z</kbd> = Aボタン</span><span>操作はこれだけ</span></div>
+        <div class="control-strip"><span><kbd>AUTO</kbd> 右へ自動で進む</span><span><kbd>TAP / ↑</kbd> ジャンプ</span><span><kbd>A / Z</kbd> 攻撃</span></div>
       </div>
 
       <div class="world-card" aria-hidden="true">
@@ -53,14 +53,14 @@
         <div class="area-hud"><span id="area-number">AREA 1</span><strong id="area-name">写真街</strong></div>
         <div class="world-progress"><i id="world-progress-fill"></i><b id="distance">0%</b></div>
         <div class="combo"><span>ORDER STREAK</span><strong id="streak">0</strong></div>
-        <div id="life-bar" class="life-bar" aria-label="残り4回"><i></i><i></i><i></i><i></i></div>
+        <div id="life-bar" class="life-bar" aria-label="残り5回"><i></i><i></i><i></i><i></i><i></i></div>
       </div>
 
       <div id="action-shell" class="action-shell">
         <canvas id="action-canvas" width="1280" height="720" aria-label="師範ワールド横スクロールアクション"></canvas>
         <div class="scanlines" aria-hidden="true"></div>
 
-        <div id="area-banner" class="area-banner" aria-hidden="true"><small id="area-banner-number">AREA 1</small><strong id="area-banner-name">写真街</strong><span>走破せよ!</span></div>
+        <div id="area-banner" class="area-banner" aria-hidden="true"><small id="area-banner-number">AREA 1</small><strong id="area-banner-name">写真街</strong><span>自動で進む! 画面タップで跳べ / Aで殴れ</span></div>
         <div id="order-card" class="order-card" aria-live="assertive"><small>無茶振り発生!</small><strong id="order-text">跳べ!</strong><span id="order-hint">Space / JUMP</span><i><b id="order-timer"></b></i></div>
         <div id="order-result" class="order-result" aria-live="assertive"><small id="order-result-label">ORDER CLEAR</small><strong id="order-result-text">できた!</strong><span id="order-result-score">+1000</span></div>
         <div id="boss-alert" class="boss-alert" aria-hidden="true"><small>WARNING</small><strong>門番だ!</strong><span>殴って突破しろ</span></div>
@@ -72,7 +72,7 @@
         </div>
       </div>
 
-      <div class="game-caption"><p id="mission-text"><b>GO!</b> 右へ走って写真街を抜けろ</p><p><kbd>← →</kbd> 移動　<kbd>↑</kbd> 跳ぶ　<kbd>↓</kbd> 踏む　<kbd>Z</kbd> Aボタン　<kbd>P</kbd> PAUSE</p></div>
+      <div class="game-caption"><p id="mission-text"><b>GO!</b> 自動で進む。画面タップで跳べ、Aで殴れ</p><p><kbd>AUTO</kbd> 自動走行　<kbd>TAP / ↑</kbd> 跳ぶ　<kbd>Z</kbd> Aボタン　<kbd>P</kbd> PAUSE</p></div>
     </section>
 
     <section id="result-screen" class="screen result-screen" hidden aria-labelledby="result-heading">

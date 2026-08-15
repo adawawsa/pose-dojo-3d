@@ -204,7 +204,10 @@ function resetState() {
     won: false,
     dying: false,
     score: 0,
-    lives: 4,
+    lives: 5,
+    maxLives: 5,
+    photosCollected: 0,
+    assist: { autoRun: true },
     streak: 0,
     maxStreak: 0,
     orderWins: 0,
@@ -215,7 +218,7 @@ function resetState() {
     time: 0,
     nextHudAt: 0,
     last: performance.now(),
-    nextOrderAt: 3000,
+    nextOrderAt: 4800,
     lastOrder: "",
     challenge: null,
     bannerUntil: performance.now() + 1350,
@@ -236,6 +239,7 @@ function resetState() {
       vx: 0, vy: 0, facing: 1, onGround: true,
       attackTimer: 0, attackCooldown: 0, attackId: 0,
       invulnerable: 0, runTime: 0, stomping: false,
+      coyoteTime: .14, jumpBuffer: 0,
     },
   };
 }
@@ -274,7 +278,7 @@ function updateHud() {
   els.streak.textContent = state.streak;
   els.lives.setAttribute("aria-label", `残り${state.lives}回`);
   $$("i", els.lives).forEach((heart, index) => heart.classList.toggle("lost", index >= state.lives));
-  els.mission.innerHTML = `<b>AREA ${state.area + 1}</b> ${area.mission}<em>WORLD #${state.world.code}</em>`;
+  els.mission.innerHTML = `<b>AREA ${state.area + 1}</b> ${area.mission}<mark>AUTO RUN</mark><em>WORLD #${state.world.code}</em>`;
 }
 
 function showAreaBanner(areaIndex) {
@@ -306,22 +310,29 @@ function togglePause(force) {
   }
 }
 
-function doJump() {
-  if (!state.playing || state.paused || state.dying) return;
-  if (isOrderPlaying("freeze")) finishOrder(false, "押したァ!");
+function performJump() {
   const player = state.player;
-  if (!player.onGround) return;
   player.vy = -690;
   player.onGround = false;
+  player.coyoteTime = 0;
+  player.jumpBuffer = 0;
   player.stomping = false;
   sound("jump");
   if (isOrderPlaying("jump")) finishOrder(true, "飛んだ!");
   if (isOrderPlaying("nojump")) finishOrder(false, "飛ぶなァ!");
 }
 
+function doJump() {
+  if (!state.playing || state.paused || state.dying) return;
+  if (isOrderPlaying("freeze")) { finishOrder(false, "押したァ!"); return; }
+  const player = state.player;
+  if (player.onGround || player.coyoteTime > 0) performJump();
+  else player.jumpBuffer = .18;
+}
+
 function doStomp() {
   if (!state.playing || state.paused || state.dying) return;
-  if (isOrderPlaying("freeze")) finishOrder(false, "押したァ!");
+  if (isOrderPlaying("freeze")) { finishOrder(false, "押したァ!"); return; }
   const player = state.player;
   if (player.onGround) return;
   player.stomping = true;
@@ -331,11 +342,11 @@ function doStomp() {
 
 function doAttack() {
   if (!state.playing || state.paused || state.dying) return;
-  if (isOrderPlaying("freeze")) finishOrder(false, "押したァ!");
+  if (isOrderPlaying("freeze")) { finishOrder(false, "押したァ!"); return; }
   const player = state.player;
   if (player.attackCooldown > 0) return;
-  player.attackTimer = .24;
-  player.attackCooldown = .34;
+  player.attackTimer = .3;
+  player.attackCooldown = .24;
   player.attackId += 1;
   sound("hit");
   if (isOrderPlaying("attack3")) {
@@ -349,15 +360,15 @@ function isOrderPlaying(type) {
 }
 
 const ORDER_POOL = [
-  { type: "jump", text: "↑ 跳べ!", hint: "十字キーの上", duration: 2100 },
-  { type: "attack3", text: "A 3回!", hint: "Aボタンを3回", duration: 2300 },
-  { type: "dash", text: "→ 走れ!", hint: "十字キーの右", duration: 2600 },
-  { type: "back", text: "← 戻れ!", hint: "十字キーの左", duration: 2300 },
-  { type: "freeze", text: "離せ!", hint: "十字キーもAも触るな", duration: 2200 },
-  { type: "nojump", text: "↑ 禁止!", hint: "ジャンプせず耐えろ", duration: 2200 },
-  { type: "smash", text: "A 倒せ!", hint: "赤い敵へAボタン", duration: 3400 },
-  { type: "collect", text: "写真を取れ!", hint: "十字キーで光る写真へ", duration: 3300 },
-  { type: "safe", text: "よけろ!", hint: "十字キーだけで回避", duration: 2600 },
+  { type: "jump", text: "↑ 跳べ!", hint: "十字キーの上", duration: 3000 },
+  { type: "attack3", text: "A 3回!", hint: "Aボタンを3回", duration: 3300 },
+  { type: "dash", text: "→ 走れ!", hint: "十字キーの右", duration: 3500 },
+  { type: "back", text: "← 戻れ!", hint: "十字キーの左", duration: 3300 },
+  { type: "freeze", text: "離せ!", hint: "自動走行も止まる。触るな", duration: 3000 },
+  { type: "nojump", text: "↑ 禁止!", hint: "ジャンプせず耐えろ", duration: 3000 },
+  { type: "smash", text: "A 倒せ!", hint: "近くの赤い敵へAボタン", duration: 4600 },
+  { type: "collect", text: "写真を取れ!", hint: "近くで光る写真へ", duration: 4500 },
+  { type: "safe", text: "よけろ!", hint: "十字キーだけで回避", duration: 3500 },
 ];
 
 function availableOrders() {
@@ -389,13 +400,13 @@ function startOrder(now) {
   };
 
   if (template.type === "smash") {
-    const enemy = makeEnemy(Math.min(state.player.x + 330, AREAS[state.area].end - 260), "cable");
+    const enemy = makeEnemy(Math.min(state.player.x + 270, AREAS[state.area].end - 260), "cable", false, false, { speed: 18 });
     enemy.orderTarget = true;
     state.enemies.push(enemy);
     state.challenge.targetId = enemy.id;
   }
   if (template.type === "collect") {
-    const pickup = { id: `order-${now}`, x: state.player.x + 270, y: GROUND - 100, w: 54, h: 70, photo: 7, active: true, special: true };
+    const pickup = { id: `order-${now}`, x: state.player.x + 220, y: GROUND - 100, w: 58, h: 76, photo: 7, active: true, special: true };
     state.pickups.push(pickup);
     state.challenge.targetId = pickup.id;
   }
@@ -465,7 +476,7 @@ function updateOrder(now) {
   if (challenge.phase === "result" && now >= challenge.resultUntil) {
     els.orderResult.className = "order-result";
     state.challenge = null;
-    state.nextOrderAt = state.time + 2200;
+    state.nextOrderAt = state.time + 3000;
   }
 }
 
@@ -477,18 +488,24 @@ function playerDirection() {
 
 function updatePlayer(dt) {
   const player = state.player;
-  const direction = playerDirection();
+  const manualDirection = playerDirection();
+  const orderType = ["intro", "play"].includes(state.challenge?.phase) ? state.challenge.type : "";
+  const autoRun = state.assist.autoRun && state.time > 1350 && performance.now() >= state.bannerUntil && !["freeze", "back"].includes(orderType);
+  const direction = manualDirection || (autoRun ? 1 : 0);
+  const maxSpeed = manualDirection > 0 ? 380 : manualDirection < 0 ? 340 : 220;
   if (direction) {
-    player.vx += direction * 1750 * dt;
-    player.vx = clamp(player.vx, -350, 350);
+    player.vx += direction * (manualDirection ? 1900 : 900) * dt;
+    player.vx = clamp(player.vx, -maxSpeed, maxSpeed);
     player.facing = direction;
     player.runTime += dt;
   } else {
-    player.vx *= Math.pow(.002, dt);
+    player.vx *= Math.pow(.00002, dt);
   }
   player.attackTimer = Math.max(0, player.attackTimer - dt);
   player.attackCooldown = Math.max(0, player.attackCooldown - dt);
   player.invulnerable = Math.max(0, player.invulnerable - dt);
+  player.jumpBuffer = Math.max(0, player.jumpBuffer - dt);
+  player.coyoteTime = player.onGround ? .14 : Math.max(0, player.coyoteTime - dt);
   player.vy += 1750 * dt;
 
   const previousBottom = player.y + player.h;
@@ -523,6 +540,8 @@ function updatePlayer(dt) {
     }
   }
 
+  if (player.onGround && player.jumpBuffer > 0) performJump();
+
   if (player.y > VIEW_H + 130) fallOff();
   checkAttack();
 }
@@ -530,7 +549,7 @@ function updatePlayer(dt) {
 function checkAttack() {
   const player = state.player;
   if (player.attackTimer <= 0) return;
-  const reach = 88;
+  const reach = 112;
   const attackRect = {
     x: player.facing > 0 ? player.x + player.w * .15 : player.x - player.w * .15 - reach,
     y: player.y + 24,
@@ -587,7 +606,7 @@ function updateEnemies(dt, now) {
       enemy.x += enemy.vx * dt;
       if (enemy.x < enemy.baseX - 100 || enemy.x > enemy.baseX + 70) enemy.vx *= -1;
     }
-    if (rectsOverlap(playerHitbox(16, 10), enemy)) {
+    if (rectsOverlap(playerHitbox(24, 18), enemy)) {
       if (player.stomping && player.vy > 0 && player.y + player.h * .72 < enemy.y + enemy.h * .55) {
         hitEnemy(enemy);
         player.stomping = false;
@@ -607,7 +626,7 @@ function updateProjectiles(dt) {
     projectile.y += projectile.vy * dt;
     if (projectile.y > VIEW_H + 100 || Math.abs(projectile.x - state.player.x) > 1200) projectile.active = false;
     const hitbox = { x: projectile.x - projectile.r, y: projectile.y - projectile.r, w: projectile.r * 2, h: projectile.r * 2 };
-    if (projectile.active && state.player.invulnerable <= 0 && rectsOverlap(playerHitbox(15, 8), hitbox)) {
+    if (projectile.active && state.player.invulnerable <= 0 && rectsOverlap(playerHitbox(26, 18), hitbox)) {
       projectile.active = false;
       hurtPlayer("弾に当たった!");
     }
@@ -618,12 +637,22 @@ function updateProjectiles(dt) {
 function updatePickups() {
   state.pickups.forEach((pickup) => {
     if (!pickup.active) return;
-    if (rectsOverlap(playerHitbox(10, 5), pickup)) {
+    if (rectsOverlap(playerHitbox(-7, -4), pickup)) {
       pickup.active = false;
       state.score += pickup.special ? 700 : 180;
+      if (!pickup.special) state.photosCollected += 1;
       burst(pickup.x, pickup.y + 25, "#e3ff38", 12);
       sound("coin");
       if (isOrderPlaying("collect") && state.challenge.targetId === pickup.id) finishOrder(true, "回収!");
+      if (!pickup.special && state.photosCollected % 5 === 0 && state.lives < state.maxLives) {
+        state.lives += 1;
+        burst(state.player.x, state.player.y + 40, "#39eaff", 24);
+        sound("clear");
+        vibrate([18, 20, 18]);
+        els.lives.classList.remove("heal");
+        void els.lives.offsetWidth;
+        els.lives.classList.add("heal");
+      }
       updateHud();
     }
   });
@@ -635,6 +664,7 @@ function updateArea() {
   if (nextArea === state.area) return;
   state.area = nextArea;
   state.checkpoint = AREAS[nextArea].start + 100;
+  state.player.invulnerable = Math.max(state.player.invulnerable, 1.8);
   state.score += 1500;
   showAreaBanner(nextArea);
   updateHud();
@@ -643,9 +673,9 @@ function updateArea() {
 function hurtPlayer(message) {
   const player = state.player;
   if (player.invulnerable > 0 || state.dying) return;
-  player.invulnerable = 1.15;
+  player.invulnerable = 1.8;
   player.vy = -390;
-  player.vx = -player.facing * 330;
+  player.vx = -player.facing * 240;
   state.lives -= 1;
   state.streak = 0;
   state.flash = .24;
@@ -1107,6 +1137,7 @@ window.addEventListener("blur", () => { if (state.playing && !state.paused) togg
 document.addEventListener("visibilitychange", () => { if (document.hidden && state.playing && !state.paused) togglePause(true); });
 window.addEventListener("resize", () => { configureCanvas(); if (state.player) draw(); });
 els.shell.addEventListener("contextmenu", (event) => event.preventDefault());
+els.canvas.addEventListener("pointerdown", (event) => { event.preventDefault(); doJump(); });
 els.pause.addEventListener("pointerdown", () => togglePause(false));
 
 $$('[data-control]').forEach((button) => {
