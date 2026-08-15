@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#080a0f">
+  <meta name="description" content="写真とBlenderモデルで遊ぶ、30秒の超反射神経ポーズゲーム。">
+  <title>七変化！ポーズ道場 3D</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="ambient" aria-hidden="true">
+    <img id="ambient-photo" src="assets/pose-3.jpg" alt="">
+  </div>
+  <div class="grain" aria-hidden="true"></div>
+  <div id="particles" aria-hidden="true"></div>
+
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="ポーズ道場 トップ">
+        <span class="brand-mark">ポ</span>
+        <span>POSE<br>DOJO</span>
+        <b>3D</b>
+      </a>
+      <div class="top-meta">
+        <div class="best-box">
+          <span>自己ベスト</span>
+          <strong id="top-best">00000</strong>
+        </div>
+        <button class="icon-button" id="sound-toggle" type="button" aria-label="音を消す" aria-pressed="false">
+          <span class="sound-on">♪</span><span class="sound-off">×</span>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <section class="screen landing" id="landing-screen" aria-labelledby="game-title">
+        <div class="landing-copy">
+          <p class="eyebrow"><span></span> PHOTO × BLENDER ARCADE</p>
+          <h1 id="game-title">
+            <span>七変化!</span>
+            <strong>ポーズ<br>道場</strong>
+            <em>3D</em>
+          </h1>
+          <p class="lead">写真を見切り、3Dポーズを叩き込め。<br><b>30秒</b>で師範の動きについてこられるか？</p>
+          <div class="landing-actions">
+            <button class="primary-button" id="start-button" type="button">
+              <span>入門する</span>
+              <small>START GAME</small>
+            </button>
+            <div class="key-hint"><kbd>1</kbd>–<kbd>4</kbd> キーでも遊べる</div>
+          </div>
+        </div>
+
+        <div class="hero-visual" aria-hidden="true">
+          <img class="hero-keyart" src="assets/generated-hero-v2.png" alt="">
+          <div class="hero-vignette"></div>
+          <div class="hero-sticker">BLENDER<br>MODELED!</div>
+          <div class="hero-caption"><span>師範</span> THE POSE MASTER</div>
+          <div class="live-reel">
+            <span><i></i> ORIGINAL PHOTO MOTION</span>
+            <img id="landing-reel" src="assets/pose-1.jpg" alt="">
+            <b>LIVE</b>
+          </div>
+        </div>
+
+        <div class="pose-guide" aria-label="4種類のポーズ">
+          <article style="--accent:#d7ff45">
+            <img src="assets/pose-1.jpg" alt="直立の元写真">
+            <div><b>1</b><span>直立</span><small>CHOKURITSU</small></div>
+          </article>
+          <article style="--accent:#3ee8ff">
+            <img src="assets/pose-3.jpg" alt="翼の元写真">
+            <div><b>2</b><span>翼</span><small>TSUBASA</small></div>
+          </article>
+          <article style="--accent:#ff416c">
+            <img src="assets/pose-5.jpg" alt="背面の元写真">
+            <div><b>3</b><span>背面</span><small>USHIRO</small></div>
+          </article>
+          <article style="--accent:#ffae31">
+            <img src="assets/pose-7.jpg" alt="突撃の元写真">
+            <div><b>4</b><span>突撃</span><small>TOTSUMOU</small></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="screen game" id="game-screen" hidden aria-label="ゲーム画面">
+        <div class="hud">
+          <div class="hud-block score-block"><span>SCORE</span><strong id="score">00000</strong></div>
+          <div class="master-timer">
+            <div class="timer-label"><span>残り時間</span><strong><b id="time">30</b>.<i id="time-tenth">0</i></strong></div>
+            <div class="timer-track"><i id="timer-fill"></i></div>
+          </div>
+          <div class="hud-block combo-block"><span>COMBO</span><strong><b id="combo">0</b><i>x</i></strong></div>
+          <div class="lives" id="lives" aria-label="残り3回"><i></i><i></i><i></i></div>
+        </div>
+
+        <div class="command-strip" id="command-strip" data-mode="normal">
+          <span class="command-tag" id="command-tag">通常指令</span>
+          <h2 id="command-text">この写真と同じポーズを選べ！</h2>
+          <div class="round-clock"><i id="round-fill"></i></div>
+        </div>
+
+        <div class="battlefield">
+          <img class="arena-plate" src="assets/generated-arena-v2.png" alt="" aria-hidden="true">
+          <figure class="media-card photo-card" id="photo-card">
+            <div class="card-label"><span>REFERENCE</span><b id="photo-number">PHOTO 03</b></div>
+            <img id="photo" src="assets/pose-3.jpg" alt="今回のお題写真">
+            <div class="photo-shutter" aria-hidden="true"></div>
+          </figure>
+
+          <div class="versus" aria-hidden="true"><span>見</span><b>!</b><small>KIRI</small></div>
+
+          <figure class="media-card model-card" id="model-card">
+            <div class="card-label"><span>YOUR ANSWER</span><b>3D MODEL</b></div>
+            <img id="model" src="assets/renders/pose-wing.png" alt="選択した3Dポーズ">
+            <div class="model-question" id="model-question">?</div>
+            <figcaption id="model-caption">型を選べ</figcaption>
+          </figure>
+
+          <div class="feedback" id="feedback" aria-live="assertive">
+            <strong id="feedback-main">正解!</strong>
+            <span id="feedback-sub">+250</span>
+          </div>
+          <div class="motion-cut" id="motion-cut" aria-hidden="true">
+            <img id="motion-frame" src="assets/pose-1.jpg" alt="">
+            <span><i></i> LIVE MOTION</span>
+          </div>
+        </div>
+
+        <div class="answer-grid" aria-label="回答">
+          <button class="answer" data-pose="stand" style="--accent:#d7ff45" type="button">
+            <kbd>1</kbd><span><b>直立</b><small>CHOKURITSU</small></span><i>→</i>
+          </button>
+          <button class="answer" data-pose="wing" style="--accent:#3ee8ff" type="button">
+            <kbd>2</kbd><span><b>翼</b><small>TSUBASA</small></span><i>→</i>
+          </button>
+          <button class="answer" data-pose="back" style="--accent:#ff416c" type="button">
+            <kbd>3</kbd><span><b>背面</b><small>USHIRO</small></span><i>→</i>
+          </button>
+          <button class="answer" data-pose="dash" style="--accent:#ffae31" type="button">
+            <kbd>4</kbd><span><b>突撃</b><small>TOTSUMOU</small></span><i>→</i>
+          </button>
+        </div>
+        <div class="fever-banner" id="fever-banner" aria-hidden="true">師範ゾーン <b>×2</b></div>
+        <div class="super-cutscene" id="super-cutscene" aria-hidden="true">
+          <img src="assets/generated-special-v2.png" alt="">
+          <div class="super-slash"></div>
+          <div class="super-copy"><small>7 COMBO SPECIAL</small><strong>師範<br>覚醒</strong><b>POSE FEVER!</b></div>
+        </div>
+      </section>
+
+      <section class="screen result" id="result-screen" hidden aria-labelledby="result-title">
+        <div class="result-poster">
+          <div class="result-rays" aria-hidden="true"></div>
+          <img id="result-model" src="assets/generated-special-v2.png" alt="結果を喜ぶ必殺技カット">
+          <div class="rank-stamp" id="rank-stamp"><small>RANK</small><b>S</b></div>
+        </div>
+        <div class="result-copy">
+          <p class="eyebrow"><span></span> TRAINING COMPLETE</p>
+          <h2 id="result-title">修行完了！</h2>
+          <p class="rank-name" id="rank-name">伝説のポーズ王</p>
+          <div class="final-score"><span>最終スコア</span><strong id="final-score">00000</strong></div>
+          <div class="result-stats">
+            <div><span>正解</span><b id="correct-count">0</b></div>
+            <div><span>最大コンボ</span><b id="max-combo">0</b></div>
+            <div><span>正答率</span><b id="accuracy">0%</b></div>
+          </div>
+          <p class="result-quote" id="result-quote">その立ち姿、すでに作品。</p>
+          <div class="result-actions">
+            <button class="primary-button" id="retry-button" type="button"><span>もう一度</span><small>RETRY</small></button>
+            <button class="secondary-button" id="share-button" type="button">結果をシェア</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span>MODEL &amp; RENDERED IN BLENDER</span>
+      <i></i>
+      <span>POSE DOJO / 2026</span>
+    </footer>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
