@@ -3,134 +3,93 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#08090d">
-  <meta name="description" content="5秒ごとに無茶振りが変わる、実写×Blenderの高速マイクロゲーム世界。">
-  <meta property="og:title" content="無茶振り！ポーズ道場">
-  <meta property="og:description" content="考えるな、5秒でやれ。">
+  <meta name="theme-color" content="#090711">
+  <meta name="description" content="走る、殴る、跳ぶ。そして3秒ごとに命令が変わる。元写真×Blenderの2D無茶振りアクション。">
+  <meta property="og:title" content="無茶振り！師範ラン">
+  <meta property="og:description" content="横スクロール中にルールが変わる、師範ワールド2Dアクション。">
   <meta property="og:image" content="assets/generated-shihan-world-v1.png">
-  <title>無茶振り！ポーズ道場</title>
+  <title>無茶振り！師範ラン</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="page-bg" aria-hidden="true"></div>
   <div class="noise" aria-hidden="true"></div>
-  <div id="confetti" aria-hidden="true"></div>
 
   <header class="topbar">
-    <a class="brand" href="#" id="home-link" aria-label="タイトルへ戻る">
-      <span>ポ</span><b>POSE<br>DOJO</b><i>超</i>
-    </a>
-    <div class="top-actions">
-      <p>BEST <strong id="top-best">000000</strong></p>
-      <button id="sound-button" class="round-button" type="button" aria-label="音を消す">♪</button>
-    </div>
+    <a class="brand" id="home-link" href="#" aria-label="タイトルへ戻る"><span>師</span><b>SHIHAN<br>WORLD</b><i>2D</i></a>
+    <div class="top-actions"><p>BEST <strong id="top-best">000000</strong></p><button id="sound-button" type="button" aria-label="音を消す">♪</button></div>
   </header>
 
   <main>
-    <section id="title-screen" class="screen title-screen" aria-labelledby="main-title">
+    <section id="title-screen" class="screen title-screen" aria-labelledby="game-title">
       <div class="title-copy">
-        <p class="kicker"><i></i> ENTER THE SHIHAN WORLD</p>
-        <h1 id="main-title"><small>無茶振り!</small><span>ポーズ</span><span>道場</span></h1>
-        <div class="five-sec">5<small>秒で<br>やれ!</small></div>
-        <p class="title-lead">説明は一瞬。操作は毎回ちがう。<br>考えているヒマはない。</p>
-        <button id="start-button" class="start-button" type="button">
-          <span>無茶振り開始</span><small>START PANIC</small><b>→</b>
-        </button>
-        <p class="device-note">タップ・ドラッグ・長押し・キーボード対応</p>
+        <p class="kicker"><i></i> MICROGAME × SIDE SCROLL</p>
+        <h1 id="game-title"><small>無茶振り!</small><span>師範</span><span>ラン</span></h1>
+        <div class="action-stamp">2D<br><b>ACTION</b></div>
+        <p class="lead">走れ。跳べ。殴れ。<br><strong>ただし、数秒ごとにルールが変わる。</strong></p>
+        <button id="start-button" class="start-button" type="button"><span>師範ワールドへ</span><small>START ACTION</small><b>→</b></button>
+        <div class="control-strip"><span><kbd>十字キー</kbd> 移動・ジャンプ</span><span><kbd>Z</kbd> = Aボタン</span><span>操作はこれだけ</span></div>
       </div>
 
-      <div class="title-art" aria-hidden="true">
-        <img class="keyart" src="assets/generated-shihan-world-v1.png" alt="">
-        <div class="art-shade"></div>
-        <div class="stamp">全<br><b>13</b><br>種</div>
-        <div class="live-window">
-          <span><i></i> LIVE POSE</span>
-          <img id="title-reel" src="assets/pose-1.jpg" alt="">
-        </div>
-        <p>WELCOME TO<br>SHIHAN WORLD</p>
+      <div class="world-card" aria-hidden="true">
+        <img src="assets/generated-shihan-world-v1.png" alt="">
+        <div class="world-shade"></div>
+        <div class="route-line"><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="live-photo"><span>PLAYER 1</span><img id="title-reel" src="assets/pose-7.jpg" alt=""></div>
+        <p>5 AREAS / 5 BOSSES / ENDLESS ORDERS</p>
       </div>
 
       <div class="feature-strip">
-        <article><b>01</b><span>写真街<br>シャッター通り</span></article>
-        <article><b>02</b><span>コード沼<br>からまり放題</span></article>
-        <article><b>03</b><span>ガラクタ工場<br>瓶とペン</span></article>
-        <article><b>04</b><span>師範城<br>10本ごとに決戦</span></article>
+        <article><b>RUN</b><span>写真街から<br>師範城まで走破</span></article>
+        <article><b>HIT</b><span>ペン・瓶・コードを<br>吹き飛ばす</span></article>
+        <article><b>NOW!</b><span>3秒の無茶振りが<br>乱入する</span></article>
+        <article><b>BOSS</b><span>各地区の門番を<br>連打で倒す</span></article>
       </div>
     </section>
 
-    <section id="game-screen" class="screen game-screen" hidden aria-label="マイクロゲーム">
+    <section id="game-screen" class="screen game-screen" hidden aria-label="2Dアクションゲーム">
       <div class="hud">
-        <div class="hud-score"><span>SCORE</span><strong id="score">000000</strong></div>
-        <div class="hud-center">
-          <div class="round-info"><span>無茶振り</span><strong><b id="round-number">1</b>本目</strong></div>
-          <div class="run-track" id="run-track" aria-hidden="true"></div>
-        </div>
-        <div class="speed-info"><span id="world-name">写真街</span><strong id="speed-label">ふつう</strong></div>
-        <div class="life-bar" id="life-bar" aria-label="残り4回"><i></i><i></i><i></i><i></i></div>
+        <div><span>SCORE</span><strong id="score">000000</strong></div>
+        <div class="area-hud"><span id="area-number">AREA 1</span><strong id="area-name">写真街</strong></div>
+        <div class="world-progress"><i id="world-progress-fill"></i><b id="distance">0%</b></div>
+        <div class="combo"><span>ORDER STREAK</span><strong id="streak">0</strong></div>
+        <div id="life-bar" class="life-bar" aria-label="残り4回"><i></i><i></i><i></i><i></i></div>
       </div>
 
-      <div class="game-cabinet" id="game-cabinet">
-        <img class="arena-bg" src="assets/generated-shihan-world-v1.png" alt="" aria-hidden="true">
-        <div class="stage-vignette" aria-hidden="true"></div>
-        <div id="micro-stage" class="micro-stage" aria-live="off"></div>
+      <div id="action-shell" class="action-shell">
+        <canvas id="action-canvas" width="1280" height="720" aria-label="師範ワールド横スクロールアクション"></canvas>
+        <div class="scanlines" aria-hidden="true"></div>
 
-        <div id="command-card" class="command-card">
-          <p id="command-label">無茶振り 01</p>
-          <h2 id="command-text">止めろ!</h2>
-          <span id="command-hint">写真をタップ</span>
-          <div class="command-swipe"></div>
-        </div>
+        <div id="area-banner" class="area-banner" aria-hidden="true"><small id="area-banner-number">AREA 1</small><strong id="area-banner-name">写真街</strong><span>走破せよ!</span></div>
+        <div id="order-card" class="order-card" aria-live="assertive"><small>無茶振り発生!</small><strong id="order-text">跳べ!</strong><span id="order-hint">Space / JUMP</span><i><b id="order-timer"></b></i></div>
+        <div id="order-result" class="order-result" aria-live="assertive"><small id="order-result-label">ORDER CLEAR</small><strong id="order-result-text">できた!</strong><span id="order-result-score">+1000</span></div>
+        <div id="boss-alert" class="boss-alert" aria-hidden="true"><small>WARNING</small><strong>門番だ!</strong><span>殴って突破しろ</span></div>
+        <div id="pause-card" class="pause-card"><strong>PAUSE</strong><span>画面をタップして再開</span></div>
 
-        <div id="result-flash" class="result-flash" aria-live="assertive">
-          <small id="result-kicker">SUCCESS</small>
-          <strong id="result-word">できた!</strong>
-          <span id="result-points">+800</span>
-        </div>
-
-        <div id="speed-up" class="speed-up" aria-hidden="true">
-          <img class="world-map-bg" src="assets/generated-shihan-world-v1.png" alt="">
-          <small>WORLD TRIP</small><strong>次の地区へ!</strong><b id="world-district">コード沼</b><em id="speed-up-label">SPEED ×1.2</em>
-        </div>
-
-        <div id="boss-intro" class="boss-intro" aria-hidden="true">
-          <img class="world-map-bg" src="assets/generated-shihan-world-v1.png" alt="">
-          <span>10本目</span><strong>師範戦</strong><small>BOSS MICROGAME</small>
+        <div class="touch-controls" aria-label="タッチ操作">
+          <div class="d-pad" aria-label="十字キー"><button class="d-up" type="button" data-control="up" aria-label="ジャンプ">↑</button><button class="d-left" type="button" data-control="left" aria-label="左へ移動">←</button><button class="d-down" type="button" data-control="down" aria-label="空中踏みつけ">↓</button><button class="d-right" type="button" data-control="right" aria-label="右へ移動">→</button></div>
+          <div class="touch-action"><button class="a-button" type="button" data-control="a" aria-label="Aボタンで攻撃"><b>A</b><small>ACTION</small></button></div>
         </div>
       </div>
 
-      <div class="game-footer">
-        <p id="control-hint"><b>●</b> 画面をタップ</p>
-        <div class="micro-timer"><i id="micro-timer-fill"></i></div>
-        <p class="streak">STREAK <b id="streak">0</b></p>
-      </div>
+      <div class="game-caption"><p id="mission-text"><b>GO!</b> 右へ走って写真街を抜けろ</p><p><kbd>← →</kbd> 移動　<kbd>↑</kbd> 跳ぶ　<kbd>↓</kbd> 踏む　<kbd>Z</kbd> Aボタン　<kbd>P</kbd> PAUSE</p></div>
     </section>
 
     <section id="result-screen" class="screen result-screen" hidden aria-labelledby="result-heading">
-      <div class="result-art">
-        <img src="assets/generated-special-v2.png" alt="師範の必殺ポーズ">
-        <div class="result-art-shade"></div>
-        <div class="rank-medal"><small>RANK</small><b id="rank-letter">S</b></div>
-      </div>
+      <div class="result-visual"><img src="assets/generated-special-v2.png" alt="必殺ポーズの師範"><div></div><span>RANK <b id="rank-letter">A</b></span></div>
       <div class="result-copy">
-        <p class="kicker"><i></i> PANIC COMPLETE</p>
-        <h2 id="result-heading">修行<br>終了!</h2>
-        <p class="rank-title" id="rank-title">無茶振り師範</p>
-        <dl>
-          <div><dt>到達</dt><dd><b id="final-round">0</b>本</dd></div>
-          <div><dt>成功</dt><dd><b id="final-wins">0</b>本</dd></div>
-          <div><dt>最大連続</dt><dd><b id="final-streak">0</b>本</dd></div>
-        </dl>
+        <p class="kicker"><i></i> ACTION COMPLETE</p>
+        <h2 id="result-heading">走破<br>終了!</h2>
+        <p class="rank-title" id="rank-title">写真街のランナー</p>
+        <dl><div><dt>到達地区</dt><dd id="final-area">写真街</dd></div><div><dt>撃破</dt><dd><b id="final-kills">0</b>体</dd></div><div><dt>無茶振り成功</dt><dd><b id="final-orders">0</b>回</dd></div></dl>
         <div class="final-score"><span>FINAL SCORE</span><strong id="final-score">000000</strong></div>
-        <p class="result-comment" id="result-comment">考える前に、もう動いている。</p>
-        <div class="result-actions">
-          <button id="retry-button" class="start-button" type="button"><span>もう一回</span><small>RETRY PANIC</small><b>→</b></button>
-          <button id="share-button" class="share-button" type="button">結果をコピー</button>
-        </div>
+        <p id="result-comment" class="result-comment">まだ脚が足りない。</p>
+        <div class="result-actions"><button id="retry-button" class="start-button" type="button"><span>もう一走</span><small>RETRY ACTION</small><b>→</b></button><button id="share-button" class="share-button" type="button">結果をコピー</button></div>
       </div>
     </section>
   </main>
 
-  <footer><span>ORIGINAL PHOTOS × BLENDER MODEL × GENERATED ART</span><i></i><span>POSE DOJO / 2026</span></footer>
+  <footer><span>ORIGINAL PHOTOS × BLENDER SPRITES × GENERATED WORLD</span><i></i><span>SHIHAN RUN / 2026</span></footer>
   <script src="game.js"></script>
 </body>
 </html>
