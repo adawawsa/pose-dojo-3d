@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#090711">
-  <meta name="description" content="走る、殴る、跳ぶ。そして3秒ごとに命令が変わる。元写真×Blenderの2D無茶振りアクション。">
+  <meta name="description" content="走るたびに世界が変わり、3秒ごとに命令も変わる。元写真×Blenderの自動生成2Dアクション。">
   <meta property="og:title" content="無茶振り！師範ラン">
   <meta property="og:description" content="横スクロール中にルールが変わる、師範ワールド2Dアクション。">
   <meta property="og:image" content="assets/generated-shihan-world-v1.png">
@@ -23,10 +23,10 @@
   <main>
     <section id="title-screen" class="screen title-screen" aria-labelledby="game-title">
       <div class="title-copy">
-        <p class="kicker"><i></i> MICROGAME × SIDE SCROLL</p>
+        <p class="kicker"><i></i> PROCEDURAL WORLD × MICROGAME</p>
         <h1 id="game-title"><small>無茶振り!</small><span>師範</span><span>ラン</span></h1>
         <div class="action-stamp">2D<br><b>ACTION</b></div>
-        <p class="lead">走れ。跳べ。殴れ。<br><strong>ただし、数秒ごとにルールが変わる。</strong></p>
+        <p class="lead">走れ。跳べ。殴れ。<br><strong>世界も、ルールも、毎回変わる。</strong></p>
         <button id="start-button" class="start-button" type="button"><span>師範ワールドへ</span><small>START ACTION</small><b>→</b></button>
         <div class="control-strip"><span><kbd>十字キー</kbd> 移動・ジャンプ</span><span><kbd>Z</kbd> = Aボタン</span><span>操作はこれだけ</span></div>
       </div>
@@ -36,11 +36,11 @@
         <div class="world-shade"></div>
         <div class="route-line"><i></i><i></i><i></i><i></i><i></i></div>
         <div class="live-photo"><span>PLAYER 1</span><img id="title-reel" src="assets/pose-7.jpg" alt=""></div>
-        <p>5 AREAS / 5 BOSSES / ENDLESS ORDERS</p>
+        <p>GENERATED 5 AREAS / SHAREABLE SEED</p>
       </div>
 
       <div class="feature-strip">
-        <article><b>RUN</b><span>写真街から<br>師範城まで走破</span></article>
+        <article><b>NEW</b><span>足場・穴・敵が<br>毎回自動生成</span></article>
         <article><b>HIT</b><span>ペン・瓶・コードを<br>吹き飛ばす</span></article>
         <article><b>NOW!</b><span>3秒の無茶振りが<br>乱入する</span></article>
         <article><b>BOSS</b><span>各地区の門番を<br>連打で倒す</span></article>
@@ -90,6 +90,7 @@
   </main>
 
   <footer><span>ORIGINAL PHOTOS × BLENDER SPRITES × GENERATED WORLD</span><i></i><span>SHIHAN RUN / 2026</span></footer>
+  <script src="worlds.js"></script>
   <script src="game.js"></script>
 </body>
 </html>

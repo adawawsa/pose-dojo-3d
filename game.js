@@ -3,16 +3,10 @@
 let VIEW_W = 1280;
 const VIEW_H = 720;
 const GROUND = 610;
-const AREA_LENGTH = 1920;
-const WORLD_END = AREA_LENGTH * 5;
-
-const AREAS = [
-  { name: "写真街", color: "#39eaff", bg: "photoCity", mission: "カメラ軍団を蹴散らせ" },
-  { name: "コード沼", color: "#9b63ff", bg: "world", mission: "からまるコードを突破せよ" },
-  { name: "ガラクタ工場", color: "#ffae27", bg: "arena", mission: "瓶とペンの生産ラインを止めろ" },
-  { name: "バランス海岸", color: "#e3ff38", bg: "world", mission: "足場から落ちずに走れ" },
-  { name: "師範城", color: "#ff386c", bg: "world", mission: "最後の師範を殴り倒せ" },
-];
+const WorldForge = window.ShihanWorldForge;
+if (!WorldForge) throw new Error("worlds.js must be loaded before game.js");
+let AREAS = [];
+let WORLD_END = 1;
 
 const PHOTO_SRCS = Array.from({ length: 7 }, (_, index) => `assets/pose-${index + 1}.jpg`);
 const ASSET_SRCS = {
@@ -164,37 +158,22 @@ function sound(name) {
   if (name === "start") [260, 390, 520, 780].forEach((hz, i) => tone(hz, .1, "square", .03, i * .055));
 }
 
-function buildPlatforms() {
-  const platforms = [];
-  for (let area = 0; area < 5; area += 1) {
-    const start = area * AREA_LENGTH;
-    platforms.push(
-      { x: start + 520, y: 470, w: 240, h: 20 },
-      { x: start + 900, y: 390, w: 210, h: 20 },
-      { x: start + 1260, y: 495, w: 230, h: 20 },
-    );
-  }
-  return platforms;
-}
-
-const GAPS = [
-  [1480, 1595], [3350, 3480], [5270, 5400], [7180, 7310], [8830, 8960],
-];
-
 function groundAt(x) {
-  return !GAPS.some(([left, right]) => x > left && x < right);
+  return !(state.gaps || []).some(([left, right]) => x > left && x < right);
 }
 
-function makeEnemy(x, type = "pen", boss = false, final = false) {
+function makeEnemy(x, type = "pen", boss = false, final = false, options = {}) {
   const sizes = { pen: [34, 92], bottle: [58, 82], cable: [110, 58] };
   const [w, h] = boss ? (final ? [190, 230] : [135, 175]) : sizes[type];
+  const hp = options.hp || (boss ? (final ? 9 : 4) : 1);
+  const speed = options.speed || random(22, 42);
   return {
     id: Math.random().toString(36).slice(2),
     x, y: GROUND - h, w, h, type, boss, final,
-    hp: boss ? (final ? 9 : 4) : 1,
-    maxHp: boss ? (final ? 9 : 4) : 1,
+    hp,
+    maxHp: hp,
     alive: true,
-    vx: boss ? 0 : random(-42, -22),
+    vx: boss ? 0 : -speed,
     baseX: x,
     lastHit: -1,
     active: false,
@@ -204,31 +183,22 @@ function makeEnemy(x, type = "pen", boss = false, final = false) {
   };
 }
 
-function buildEnemies() {
-  const enemies = [];
-  const types = ["pen", "cable", "bottle"];
-  for (let area = 0; area < 5; area += 1) {
-    const start = area * AREA_LENGTH;
-    [700, 1100, 1420].forEach((offset, index) => enemies.push(makeEnemy(start + offset, types[(area + index) % 3])));
-    enemies.push(makeEnemy(start + 1780, types[area % 3], true, area === 4));
-  }
-  return enemies;
+function buildEnemies(world) {
+  return world.enemies.map((enemy) => makeEnemy(enemy.x, enemy.type, Boolean(enemy.boss), Boolean(enemy.final), enemy));
 }
 
-function buildPickups() {
-  const pickups = [];
-  for (let area = 0; area < 5; area += 1) {
-    const start = area * AREA_LENGTH;
-    [350, 600, 950, 1300, 1630].forEach((offset, index) => pickups.push({
-      id: `${area}-${index}`, x: start + offset, y: index % 2 ? 330 : 500,
-      w: 48, h: 62, photo: (area + index) % 7 + 1, active: true, special: false,
-    }));
-  }
-  return pickups;
+function requestedWorldSeed() {
+  const value = new URLSearchParams(location.search).get("seed");
+  if (!value) return `${Date.now()}-${Math.random()}`;
+  return /^\d+$/.test(value) ? Number(value) : value;
 }
 
 function resetState() {
+  const world = WorldForge.createWorld({ seed: requestedWorldSeed() });
+  AREAS = world.areas;
+  WORLD_END = world.length;
   state = {
+    world,
     playing: true,
     paused: false,
     won: false,
@@ -254,14 +224,13 @@ function resetState() {
     flash: 0,
     controls: { left: false, right: false, down: false },
     keys: new Set(),
-    platforms: buildPlatforms(),
-    enemies: buildEnemies(),
-    pickups: buildPickups(),
+    gaps: world.gaps,
+    platforms: world.platforms,
+    enemies: buildEnemies(world),
+    pickups: world.pickups.map((pickup) => ({ ...pickup })),
     projectiles: [],
     particles: [],
-    decorations: Array.from({ length: 25 }, (_, index) => ({
-      x: 260 + index * 370, photo: index % 7 + 1, y: index % 3 === 0 ? 205 : 260,
-    })),
+    decorations: world.decorations,
     player: {
       x: 120, y: GROUND - 152, w: 88, h: 152,
       vx: 0, vy: 0, facing: 1, onGround: true,
@@ -305,7 +274,7 @@ function updateHud() {
   els.streak.textContent = state.streak;
   els.lives.setAttribute("aria-label", `残り${state.lives}回`);
   $$("i", els.lives).forEach((heart, index) => heart.classList.toggle("lost", index >= state.lives));
-  els.mission.innerHTML = `<b>AREA ${state.area + 1}</b> ${area.mission}`;
+  els.mission.innerHTML = `<b>AREA ${state.area + 1}</b> ${area.mission}<em>WORLD #${state.world.code}</em>`;
 }
 
 function showAreaBanner(areaIndex) {
@@ -420,7 +389,7 @@ function startOrder(now) {
   };
 
   if (template.type === "smash") {
-    const enemy = makeEnemy(Math.min(state.player.x + 330, (state.area + 1) * AREA_LENGTH - 260), "cable");
+    const enemy = makeEnemy(Math.min(state.player.x + 330, AREAS[state.area].end - 260), "cable");
     enemy.orderTarget = true;
     state.enemies.push(enemy);
     state.challenge.targetId = enemy.id;
@@ -661,10 +630,11 @@ function updatePickups() {
 }
 
 function updateArea() {
-  const nextArea = clamp(Math.floor(state.player.x / AREA_LENGTH), 0, AREAS.length - 1);
+  const foundArea = AREAS.findIndex((area) => state.player.x < area.end);
+  const nextArea = foundArea < 0 ? AREAS.length - 1 : foundArea;
   if (nextArea === state.area) return;
   state.area = nextArea;
-  state.checkpoint = nextArea * AREA_LENGTH + 100;
+  state.checkpoint = AREAS[nextArea].start + 100;
   state.score += 1500;
   showAreaBanner(nextArea);
   updateHud();
@@ -848,20 +818,61 @@ function draw() {
 
 function drawParallax(area) {
   const offset = -((state.cameraX * .18) % 280);
-  ctx.globalAlpha = .38;
-  for (let x = offset - 280; x < VIEW_W + 280; x += 280) {
-    ctx.fillStyle = area.color;
-    ctx.beginPath();
-    ctx.moveTo(x, GROUND - 115);
-    ctx.lineTo(x + 90, GROUND - 260);
-    ctx.lineTo(x + 210, GROUND - 150);
-    ctx.lineTo(x + 280, GROUND - 330);
-    ctx.lineTo(x + 280, GROUND);
-    ctx.lineTo(x, GROUND);
-    ctx.closePath();
-    ctx.fill();
+  ctx.save();
+  ctx.globalAlpha = .36;
+  ctx.fillStyle = area.color;
+  ctx.strokeStyle = area.color;
+
+  if (area.shape === "cable") {
+    ctx.lineWidth = 20;
+    for (let x = offset - 280; x < VIEW_W + 280; x += 280) {
+      ctx.beginPath();
+      ctx.moveTo(x - 30, GROUND - 80);
+      ctx.bezierCurveTo(x + 30, GROUND - 330, x + 170, GROUND - 20, x + 300, GROUND - 270);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(x + 145, GROUND - 190, 54, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  } else if (area.shape === "factory") {
+    for (let x = offset - 280; x < VIEW_W + 280; x += 280) {
+      ctx.fillRect(x, GROUND - 250, 92, 250);
+      ctx.fillRect(x + 112, GROUND - 355, 52, 355);
+      ctx.fillRect(x + 184, GROUND - 190, 105, 190);
+      ctx.globalAlpha = .18;
+      for (let y = GROUND - 225; y < GROUND - 30; y += 42) ctx.fillRect(x + 15, y, 22, 20);
+      ctx.globalAlpha = .36;
+    }
+  } else if (area.shape === "coast") {
+    ctx.lineWidth = 34;
+    for (let x = offset - 280; x < VIEW_W + 280; x += 280) {
+      ctx.beginPath();
+      ctx.arc(x + 70, GROUND - 90, 105, Math.PI, Math.PI * 2);
+      ctx.arc(x + 230, GROUND - 90, 105, Math.PI, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillRect(x + 70, GROUND - 52, 160, 52);
+    }
+  } else if (area.shape === "castle") {
+    for (let x = offset - 280; x < VIEW_W + 280; x += 280) {
+      ctx.fillRect(x + 25, GROUND - 300, 80, 300);
+      ctx.fillRect(x + 155, GROUND - 390, 100, 390);
+      for (let block = 0; block < 4; block += 1) ctx.fillRect(x + 148 + block * 31, GROUND - 425, 20, 36);
+      ctx.fillRect(x + 85, GROUND - 170, 90, 170);
+    }
+  } else {
+    for (let x = offset - 280; x < VIEW_W + 280; x += 280) {
+      ctx.beginPath();
+      ctx.moveTo(x, GROUND - 115);
+      ctx.lineTo(x + 90, GROUND - 260);
+      ctx.lineTo(x + 210, GROUND - 150);
+      ctx.lineTo(x + 280, GROUND - 330);
+      ctx.lineTo(x + 280, GROUND);
+      ctx.lineTo(x, GROUND);
+      ctx.closePath();
+      ctx.fill();
+    }
   }
-  ctx.globalAlpha = 1;
+  ctx.restore();
 }
 
 function drawGround(area) {
@@ -904,6 +915,7 @@ function drawDecorations() {
     if (!image) return;
     ctx.save();
     ctx.translate(x, item.y);
+    ctx.scale(item.scale || 1, item.scale || 1);
     ctx.rotate(Math.sin(item.x) * .035);
     ctx.fillStyle = item.photo % 2 ? "#fff9e8" : "#e3ff38";
     ctx.fillRect(-54, -72, 108, 144);
@@ -1123,7 +1135,9 @@ els.sound.addEventListener("click", () => {
   els.sound.setAttribute("aria-label", muted ? "音を出す" : "音を消す");
 });
 els.share.addEventListener("click", async () => {
-  const text = `無茶振り！師範ランで${AREAS[state.area].name}まで到達、${Math.round(state.score)}点！\n${location.href}`;
+  const sharedUrl = new URL(location.href);
+  sharedUrl.searchParams.set("seed", state.world.seed);
+  const text = `無茶振り！師範ランで${AREAS[state.area].name}まで到達、${Math.round(state.score)}点！\nWORLD #${state.world.code}\n${sharedUrl}`;
   try { await navigator.clipboard.writeText(text); els.share.textContent = "コピーした!"; }
   catch { window.prompt("結果をコピー", text); }
   window.setTimeout(() => { els.share.textContent = "結果をコピー"; }, 1400);
