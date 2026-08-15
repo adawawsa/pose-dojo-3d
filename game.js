@@ -43,6 +43,7 @@ const els = {
   streak: $("#streak"),
   stage: $("#micro-stage"),
   cabinet: $("#game-cabinet"),
+  arena: $(".arena-bg", $("#game-cabinet")),
   command: $("#command-card"),
   commandLabel: $("#command-label"),
   commandText: $("#command-text"),
@@ -671,11 +672,11 @@ const GAME_FACTORIES = [
 ];
 
 const AREAS = [
-  { name: "写真村", slug: "photo", games: [stopGame, turnGame, findGame, stillGame, placeGame] },
-  { name: "コード沼", slug: "cable", games: [shakeGame, jumpGame, dodgeGame, balanceGame, pumpGame] },
-  { name: "ガラクタ工場", slug: "factory", games: [catchGame, dodgeGame, pumpGame, chargeGame, stopGame] },
-  { name: "バランス海岸", slug: "beach", games: [balanceGame, jumpGame, stillGame, turnGame, catchGame] },
-  { name: "師範城", slug: "castle", games: [placeGame, findGame, chargeGame, pumpGame, dodgeGame, shakeGame] },
+  { name: "写真街", slug: "photo", background: "assets/generated-photo-city-v1.png", games: [stopGame, turnGame, findGame, stillGame, placeGame] },
+  { name: "コード沼", slug: "cable", background: "assets/generated-shihan-world-v1.png", games: [shakeGame, jumpGame, dodgeGame, balanceGame, pumpGame] },
+  { name: "ガラクタ工場", slug: "factory", background: "assets/generated-shihan-world-v1.png", games: [catchGame, dodgeGame, pumpGame, chargeGame, stopGame] },
+  { name: "バランス海岸", slug: "beach", background: "assets/generated-shihan-world-v1.png", games: [balanceGame, jumpGame, stillGame, turnGame, catchGame] },
+  { name: "師範城", slug: "castle", background: "assets/generated-shihan-world-v1.png", games: [placeGame, findGame, chargeGame, pumpGame, dodgeGame, shakeGame] },
 ];
 
 function areaIndexForRound(round) {
@@ -763,6 +764,7 @@ function nextMicrogame() {
   state.token += 1;
   const area = AREAS[areaIndexForRound(state.round)];
   els.cabinet.dataset.area = area.slug;
+  els.arena.src = area.background;
   state.current = chooseMicrogame();
   const game = state.current;
   const ctx = makeContext();
@@ -1000,6 +1002,7 @@ function startTitleReel() {
   "assets/generated-arena-v2.png",
   "assets/generated-special-v2.png",
   "assets/generated-shihan-world-v1.png",
+  "assets/generated-photo-city-v1.png",
 ].forEach((src) => { const image = new Image(); image.src = src; });
 
 resetState();

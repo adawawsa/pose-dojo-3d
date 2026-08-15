@@ -154,7 +154,7 @@ main { width: min(1440px, calc(100% - 48px)); min-height: calc(100svh - 100px); 
 
 .game-cabinet { position: relative; min-height: 0; overflow: hidden; border: 1px solid rgba(247,241,220,.27); background: #090b10; box-shadow: var(--shadow); touch-action: none; }
 .arena-bg { position: absolute; inset: -2%; width: 104%; height: 104%; object-fit: cover; filter: saturate(1.18) contrast(1.06) brightness(.62); transition: object-position .45s ease, filter .25s ease; }
-.game-cabinet[data-area="photo"] .arena-bg { object-position: 12% 48%; }
+.game-cabinet[data-area="photo"] .arena-bg { object-position: center; filter: saturate(1.2) contrast(1.05) brightness(.6); }
 .game-cabinet[data-area="cable"] .arena-bg { object-position: 48% 42%; }
 .game-cabinet[data-area="factory"] .arena-bg { object-position: 25% 88%; }
 .game-cabinet[data-area="beach"] .arena-bg { object-position: 73% 78%; }
