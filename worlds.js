@@ -8,27 +8,27 @@
     areaLength: [1840, 2080],
     areas: [
       {
-        id: "photo-city", name: "写真街", color: "#39eaff", bg: "photoCity", shape: "city",
-        mission: "カメラ軍団を蹴散らせ", enemyTypes: ["pen", "bottle"], difficulty: 1,
+        id: "gear-city", name: "歯車街", color: "#39eaff", skyTop: "#151044", skyBottom: "#234a78", shape: "city",
+        mission: "ゼンマイ兵を蹴散らせ", enemyTypes: ["pen", "bottle"], difficulty: 1,
         platforms: [3, 4], enemies: [3, 4], pickups: [5, 6], gaps: [1, 1], gapWidth: [92, 118], boss: { hp: 4 },
       },
       {
-        id: "cable-marsh", name: "コード沼", color: "#9b63ff", bg: "world", shape: "cable",
-        mission: "からまるコードを突破せよ", enemyTypes: ["cable", "pen"], difficulty: 1.15,
+        id: "slime-sewer", name: "スライム下水道", color: "#9b63ff", skyTop: "#160c2b", skyBottom: "#3b1754", shape: "cable",
+        mission: "うねるスライムを突破せよ", enemyTypes: ["cable", "pen"], difficulty: 1.15,
         platforms: [3, 5], enemies: [3, 5], pickups: [5, 7], gaps: [1, 2], gapWidth: [98, 126], boss: { hp: 4 },
       },
       {
-        id: "junk-factory", name: "ガラクタ工場", color: "#ffae27", bg: "arena", shape: "factory",
-        mission: "瓶とペンの生産ラインを止めろ", enemyTypes: ["bottle", "pen", "cable"], difficulty: 1.3,
+        id: "lava-factory", name: "灼熱工場", color: "#ffae27", skyTop: "#310914", skyBottom: "#7b2716", shape: "factory",
+        mission: "暴走ラインを止めろ", enemyTypes: ["bottle", "pen", "cable"], difficulty: 1.3,
         platforms: [4, 5], enemies: [4, 5], pickups: [5, 7], gaps: [1, 2], gapWidth: [104, 132], boss: { hp: 5 },
       },
       {
-        id: "balance-coast", name: "バランス海岸", color: "#e3ff38", bg: "world", shape: "coast",
-        mission: "足場から落ちずに走れ", enemyTypes: ["cable", "bottle"], difficulty: 1.45,
+        id: "storm-harbor", name: "嵐の港", color: "#e3ff38", skyTop: "#071d38", skyBottom: "#17647a", shape: "coast",
+        mission: "沈む足場を渡りきれ", enemyTypes: ["cable", "bottle"], difficulty: 1.45,
         platforms: [4, 6], enemies: [4, 6], pickups: [6, 8], gaps: [2, 2], gapWidth: [108, 138], boss: { hp: 5 },
       },
       {
-        id: "shihan-castle", name: "師範城", color: "#ff386c", bg: "world", shape: "castle",
+        id: "shihan-castle", name: "師範城", color: "#ff386c", skyTop: "#190719", skyBottom: "#661837", shape: "castle",
         mission: "最後の師範を殴り倒せ", enemyTypes: ["pen", "cable", "bottle"], difficulty: 1.7,
         platforms: [5, 6], enemies: [5, 6], pickups: [6, 8], gaps: [2, 2], gapWidth: [112, 142], boss: { hp: 9, final: true },
       },
@@ -144,7 +144,7 @@
           y: choose(random, [330, 410, 500]),
           w: 48,
           h: 62,
-          photo: ((areaIndex * 2 + index + Math.floor(random() * 3)) % 7) + 1,
+          gem: (areaIndex + index) % 4,
           active: true,
           special: false,
           area: areaIndex,
@@ -156,7 +156,7 @@
         decorations.push({
           x: Math.round(start + 190 + index * ((length - 300) / decorationCount) + range(random, [-45, 45])),
           y: choose(random, [185, 220, 265]),
-          photo: ((areaIndex + index) % 7) + 1,
+          kind: choose(random, ["tower", "pipe", "sign", "crate"]),
           scale: range(random, [.82, 1.18]),
           area: areaIndex,
         });

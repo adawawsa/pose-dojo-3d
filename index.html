@@ -4,11 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#090711">
-  <meta name="description" content="走るたびに世界が変わり、3秒ごとに命令も変わる。元写真×Blenderの自動生成2Dアクション。">
-  <meta property="og:title" content="無茶振り！師範ラン">
-  <meta property="og:description" content="横スクロール中にルールが変わる、師範ワールド2Dアクション。">
-  <meta property="og:image" content="assets/generated-shihan-world-v1.png">
-  <title>無茶振り！師範ラン</title>
+  <meta name="description" content="殴る、跳ぶ、踏みつける。自動生成ワールドを進む純粋な2Dアクション。">
+  <meta property="og:title" content="師範ワールド 2D">
+  <meta property="og:description" content="5つの地区を冒険してボスを倒す、手描き風2Dアクション。">
+  <title>師範ワールド 2D</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -23,36 +22,35 @@
   <main>
     <section id="title-screen" class="screen title-screen" aria-labelledby="game-title">
       <div class="title-copy">
-        <p class="kicker"><i></i> PROCEDURAL WORLD × MICROGAME</p>
-        <h1 id="game-title"><small>無茶振り!</small><span>師範</span><span>ラン</span></h1>
+        <p class="kicker"><i></i> PIXEL HERO × 2D ACTION</p>
+        <h1 id="game-title"><small>パンチで進め!</small><span>師範</span><span>ワールド</span></h1>
         <div class="action-stamp">2D<br><b>ACTION</b></div>
-        <p class="lead">走れ。跳べ。殴れ。<br><strong>世界も、ルールも、毎回変わる。</strong></p>
+        <p class="lead">殴れ。跳べ。踏みつけろ。<br><strong>5つの地区のボスを倒せ。</strong></p>
         <button id="start-button" class="start-button" type="button"><span>師範ワールドへ</span><small>START ACTION</small><b>→</b></button>
-        <div class="control-strip"><span><kbd>AUTO</kbd> 右へ自動で進む</span><span><kbd>TAP / ↑</kbd> ジャンプ</span><span><kbd>A / Z</kbd> 攻撃</span></div>
+        <div class="control-strip"><span><kbd>← →</kbd> 移動</span><span><kbd>TAP / ↑</kbd> ジャンプ</span><span><kbd>A / Z</kbd> パンチ</span></div>
       </div>
 
-      <div class="world-card" aria-hidden="true">
-        <img src="assets/generated-shihan-world-v1.png" alt="">
-        <div class="world-shade"></div>
+      <div class="world-card world-preview" aria-hidden="true">
+        <div class="preview-moon"></div><div class="preview-city"><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="preview-road"></div><div class="preview-hero"></div><div class="preview-enemy">!</div>
         <div class="route-line"><i></i><i></i><i></i><i></i><i></i></div>
-        <div class="live-photo"><span>PLAYER 1</span><img id="title-reel" src="assets/pose-7.jpg" alt=""></div>
-        <p>GENERATED 5 AREAS / SHAREABLE SEED</p>
+        <p>5 WORLDS / TREASURES / GIANT BOSSES</p>
       </div>
 
       <div class="feature-strip">
-        <article><b>NEW</b><span>足場・穴・敵が<br>毎回自動生成</span></article>
-        <article><b>HIT</b><span>ペン・瓶・コードを<br>吹き飛ばす</span></article>
-        <article><b>NOW!</b><span>3秒の無茶振りが<br>乱入する</span></article>
-        <article><b>BOSS</b><span>各地区の門番を<br>連打で倒す</span></article>
+        <article><b>GO</b><span>5つの地区を<br>自由に探索</span></article>
+        <article><b>HIT</b><span>パンチと踏みつけで<br>敵を吹き飛ばす</span></article>
+        <article><b>GET</b><span>宝石を集めて<br>ライフを回復</span></article>
+        <article><b>BOSS</b><span>巨大な門番を<br>連打で倒す</span></article>
       </div>
     </section>
 
     <section id="game-screen" class="screen game-screen" hidden aria-label="2Dアクションゲーム">
       <div class="hud">
         <div><span>SCORE</span><strong id="score">000000</strong></div>
-        <div class="area-hud"><span id="area-number">AREA 1</span><strong id="area-name">写真街</strong></div>
+        <div class="area-hud"><span id="area-number">AREA 1</span><strong id="area-name">歯車街</strong></div>
         <div class="world-progress"><i id="world-progress-fill"></i><b id="distance">0%</b></div>
-        <div class="combo"><span>ORDER STREAK</span><strong id="streak">0</strong></div>
+        <div class="combo"><span>TREASURE</span><strong id="treasure-count">0</strong></div>
         <div id="life-bar" class="life-bar" aria-label="残り5回"><i></i><i></i><i></i><i></i><i></i></div>
       </div>
 
@@ -60,9 +58,7 @@
         <canvas id="action-canvas" width="1280" height="720" aria-label="師範ワールド横スクロールアクション"></canvas>
         <div class="scanlines" aria-hidden="true"></div>
 
-        <div id="area-banner" class="area-banner" aria-hidden="true"><small id="area-banner-number">AREA 1</small><strong id="area-banner-name">写真街</strong><span>自動で進む! 画面タップで跳べ / Aで殴れ</span></div>
-        <div id="order-card" class="order-card" aria-live="assertive"><small>無茶振り発生!</small><strong id="order-text">跳べ!</strong><span id="order-hint">Space / JUMP</span><i><b id="order-timer"></b></i></div>
-        <div id="order-result" class="order-result" aria-live="assertive"><small id="order-result-label">ORDER CLEAR</small><strong id="order-result-text">できた!</strong><span id="order-result-score">+1000</span></div>
+        <div id="area-banner" class="area-banner" aria-hidden="true"><small id="area-banner-number">AREA 1</small><strong id="area-banner-name">歯車街</strong><span>← →で進む / タップで跳ぶ / Aで殴る</span></div>
         <div id="boss-alert" class="boss-alert" aria-hidden="true"><small>WARNING</small><strong>門番だ!</strong><span>殴って突破しろ</span></div>
         <div id="pause-card" class="pause-card"><strong>PAUSE</strong><span>画面をタップして再開</span></div>
 
@@ -72,16 +68,16 @@
         </div>
       </div>
 
-      <div class="game-caption"><p id="mission-text"><b>GO!</b> 自動で進む。画面タップで跳べ、Aで殴れ</p><p><kbd>AUTO</kbd> 自動走行　<kbd>TAP / ↑</kbd> 跳ぶ　<kbd>Z</kbd> Aボタン　<kbd>P</kbd> PAUSE</p></div>
+      <div class="game-caption"><p id="mission-text"><b>GO!</b> 敵を倒して宝石を集めろ</p><p><kbd>← →</kbd> 移動　<kbd>TAP / ↑</kbd> 跳ぶ　<kbd>↓</kbd> 踏む　<kbd>Z</kbd> パンチ　<kbd>P</kbd> PAUSE</p></div>
     </section>
 
     <section id="result-screen" class="screen result-screen" hidden aria-labelledby="result-heading">
-      <div class="result-visual"><img src="assets/generated-special-v2.png" alt="必殺ポーズの師範"><div></div><span>RANK <b id="rank-letter">A</b></span></div>
+      <div class="result-visual result-art"><div class="result-sun"></div><div class="result-towers"><i></i><i></i><i></i></div><div class="result-hero"></div><span>RANK <b id="rank-letter">A</b></span></div>
       <div class="result-copy">
         <p class="kicker"><i></i> ACTION COMPLETE</p>
         <h2 id="result-heading">走破<br>終了!</h2>
-        <p class="rank-title" id="rank-title">写真街のランナー</p>
-        <dl><div><dt>到達地区</dt><dd id="final-area">写真街</dd></div><div><dt>撃破</dt><dd><b id="final-kills">0</b>体</dd></div><div><dt>無茶振り成功</dt><dd><b id="final-orders">0</b>回</dd></div></dl>
+        <p class="rank-title" id="rank-title">歯車街の拳士</p>
+        <dl><div><dt>到達地区</dt><dd id="final-area">歯車街</dd></div><div><dt>撃破</dt><dd><b id="final-kills">0</b>体</dd></div><div><dt>宝石</dt><dd><b id="final-treasures">0</b>個</dd></div></dl>
         <div class="final-score"><span>FINAL SCORE</span><strong id="final-score">000000</strong></div>
         <p id="result-comment" class="result-comment">まだ脚が足りない。</p>
         <div class="result-actions"><button id="retry-button" class="start-button" type="button"><span>もう一走</span><small>RETRY ACTION</small><b>→</b></button><button id="share-button" class="share-button" type="button">結果をコピー</button></div>
@@ -89,7 +85,7 @@
     </section>
   </main>
 
-  <footer><span>ORIGINAL PHOTOS × BLENDER SPRITES × GENERATED WORLD</span><i></i><span>SHIHAN RUN / 2026</span></footer>
+  <footer><span>CODE-DRAWN WORLD × PIXEL HERO</span><i></i><span>SHIHAN WORLD / 2026</span></footer>
   <script src="worlds.js"></script>
   <script src="game.js"></script>
 </body>

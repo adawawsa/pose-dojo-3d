@@ -8,16 +8,8 @@ if (!WorldForge) throw new Error("worlds.js must be loaded before game.js");
 let AREAS = [];
 let WORLD_END = 1;
 
-const PHOTO_SRCS = Array.from({ length: 7 }, (_, index) => `assets/pose-${index + 1}.jpg`);
 const ASSET_SRCS = {
-  world: "assets/generated-shihan-world-v1.png",
-  photoCity: "assets/generated-photo-city-v1.png",
-  arena: "assets/generated-arena-v2.png",
-  special: "assets/generated-special-v2.png",
-  stand: "assets/renders/pose-stand.png",
-  wing: "assets/renders/pose-wing.png",
-  back: "assets/renders/pose-back.png",
-  dash: "assets/renders/pose-dash.png",
+  pixelHero: "assets/pixel-hero-sheet-v1.png",
 };
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -41,50 +33,36 @@ const els = {
   areaName: $("#area-name"),
   progress: $("#world-progress-fill"),
   distance: $("#distance"),
-  streak: $("#streak"),
+  treasureCount: $("#treasure-count"),
   lives: $("#life-bar"),
   shell: $("#action-shell"),
   canvas: $("#action-canvas"),
   areaBanner: $("#area-banner"),
   areaBannerNumber: $("#area-banner-number"),
   areaBannerName: $("#area-banner-name"),
-  orderCard: $("#order-card"),
-  orderText: $("#order-text"),
-  orderHint: $("#order-hint"),
-  orderTimer: $("#order-timer"),
-  orderResult: $("#order-result"),
-  orderResultLabel: $("#order-result-label"),
-  orderResultText: $("#order-result-text"),
-  orderResultScore: $("#order-result-score"),
   bossAlert: $("#boss-alert"),
   pause: $("#pause-card"),
   mission: $("#mission-text"),
   finalArea: $("#final-area"),
   finalKills: $("#final-kills"),
-  finalOrders: $("#final-orders"),
+  finalTreasures: $("#final-treasures"),
   finalScore: $("#final-score"),
   rank: $("#rank-letter"),
   rankTitle: $("#rank-title"),
   resultComment: $("#result-comment"),
-  titleReel: $("#title-reel"),
 };
 
 const ctx = els.canvas.getContext("2d");
 const images = {};
-const backgroundCache = new Map();
 let assetsReady = null;
 let state = {};
 let frame = 0;
 let audioContext = null;
 let muted = false;
-let titleReelTimer = 0;
 
 function loadAssets() {
   if (assetsReady) return assetsReady;
-  const entries = [
-    ...Object.entries(ASSET_SRCS),
-    ...PHOTO_SRCS.map((src, index) => [`photo${index + 1}`, src]),
-  ];
+  const entries = Object.entries(ASSET_SRCS);
   assetsReady = Promise.all(entries.map(([key, src]) => new Promise((resolve) => {
     const image = new Image();
     image.onload = () => { images[key] = image; resolve(); };
@@ -100,7 +78,7 @@ function configureCanvas() {
   VIEW_W = Math.round(clamp(VIEW_H * ratio, 560, 1500));
   els.canvas.width = VIEW_W;
   els.canvas.height = VIEW_H;
-  backgroundCache.clear();
+  ctx.imageSmoothingEnabled = false;
 }
 
 function vibrate(pattern) {
@@ -152,7 +130,6 @@ function sound(name) {
   if (name === "hit") { tone(145, .055, "sawtooth", .04); tone(310, .045, "square", .025, .025); }
   if (name === "hurt") [150, 95].forEach((hz, i) => tone(hz, .14, "sawtooth", .035, i * .07));
   if (name === "coin") [660, 920].forEach((hz, i) => tone(hz, .07, "square", .026, i * .045));
-  if (name === "order") [340, 500, 760].forEach((hz, i) => tone(hz, .075, "square", .028, i * .045));
   if (name === "clear") [520, 720, 980].forEach((hz, i) => tone(hz, .1, "triangle", .032, i * .055));
   if (name === "boss") [95, 95, 155].forEach((hz, i) => tone(hz, .16, "sawtooth", .035, i * .12));
   if (name === "start") [260, 390, 520, 780].forEach((hz, i) => tone(hz, .1, "square", .03, i * .055));
@@ -179,7 +156,6 @@ function makeEnemy(x, type = "pen", boss = false, final = false, options = {}) {
     active: false,
     alerted: false,
     attackAt: 0,
-    orderTarget: false,
   };
 }
 
@@ -206,11 +182,7 @@ function resetState() {
     score: 0,
     lives: 5,
     maxLives: 5,
-    photosCollected: 0,
-    assist: { autoRun: true },
-    streak: 0,
-    maxStreak: 0,
-    orderWins: 0,
+    treasures: 0,
     kills: 0,
     area: 0,
     checkpoint: 120,
@@ -218,9 +190,6 @@ function resetState() {
     time: 0,
     nextHudAt: 0,
     last: performance.now(),
-    nextOrderAt: 4800,
-    lastOrder: "",
-    challenge: null,
     bannerUntil: performance.now() + 1350,
     bossAlertUntil: 0,
     shake: 0,
@@ -264,7 +233,7 @@ async function startRun() {
 }
 
 function hideOverlays() {
-  [els.areaBanner, els.orderCard, els.orderResult, els.bossAlert, els.pause].forEach((el) => { el.className = el.className.split(" ")[0]; });
+  [els.areaBanner, els.bossAlert, els.pause].forEach((el) => { el.className = el.className.split(" ")[0]; });
 }
 
 function updateHud() {
@@ -275,10 +244,10 @@ function updateHud() {
   const percent = clamp((state.player.x / WORLD_END) * 100, 0, 100);
   els.progress.style.width = `${percent}%`;
   els.distance.textContent = `${Math.floor(percent)}%`;
-  els.streak.textContent = state.streak;
+  els.treasureCount.textContent = state.treasures;
   els.lives.setAttribute("aria-label", `残り${state.lives}回`);
   $$("i", els.lives).forEach((heart, index) => heart.classList.toggle("lost", index >= state.lives));
-  els.mission.innerHTML = `<b>AREA ${state.area + 1}</b> ${area.mission}<mark>AUTO RUN</mark><em>WORLD #${state.world.code}</em>`;
+  els.mission.innerHTML = `<b>AREA ${state.area + 1}</b> ${area.mission}<em>WORLD #${state.world.code}</em>`;
 }
 
 function showAreaBanner(areaIndex) {
@@ -318,13 +287,10 @@ function performJump() {
   player.jumpBuffer = 0;
   player.stomping = false;
   sound("jump");
-  if (isOrderPlaying("jump")) finishOrder(true, "飛んだ!");
-  if (isOrderPlaying("nojump")) finishOrder(false, "飛ぶなァ!");
 }
 
 function doJump() {
   if (!state.playing || state.paused || state.dying) return;
-  if (isOrderPlaying("freeze")) { finishOrder(false, "押したァ!"); return; }
   const player = state.player;
   if (player.onGround || player.coyoteTime > 0) performJump();
   else player.jumpBuffer = .18;
@@ -332,7 +298,6 @@ function doJump() {
 
 function doStomp() {
   if (!state.playing || state.paused || state.dying) return;
-  if (isOrderPlaying("freeze")) { finishOrder(false, "押したァ!"); return; }
   const player = state.player;
   if (player.onGround) return;
   player.stomping = true;
@@ -342,142 +307,12 @@ function doStomp() {
 
 function doAttack() {
   if (!state.playing || state.paused || state.dying) return;
-  if (isOrderPlaying("freeze")) { finishOrder(false, "押したァ!"); return; }
   const player = state.player;
   if (player.attackCooldown > 0) return;
   player.attackTimer = .3;
   player.attackCooldown = .24;
   player.attackId += 1;
   sound("hit");
-  if (isOrderPlaying("attack3")) {
-    state.challenge.count += 1;
-    if (state.challenge.count >= 3) finishOrder(true, "三連打!");
-  }
-}
-
-function isOrderPlaying(type) {
-  return state.challenge?.phase === "play" && state.challenge.type === type;
-}
-
-const ORDER_POOL = [
-  { type: "jump", text: "↑ 跳べ!", hint: "十字キーの上", duration: 3000 },
-  { type: "attack3", text: "A 3回!", hint: "Aボタンを3回", duration: 3300 },
-  { type: "dash", text: "→ 走れ!", hint: "十字キーの右", duration: 3500 },
-  { type: "back", text: "← 戻れ!", hint: "十字キーの左", duration: 3300 },
-  { type: "freeze", text: "離せ!", hint: "自動走行も止まる。触るな", duration: 3000 },
-  { type: "nojump", text: "↑ 禁止!", hint: "ジャンプせず耐えろ", duration: 3000 },
-  { type: "smash", text: "A 倒せ!", hint: "近くの赤い敵へAボタン", duration: 4600 },
-  { type: "collect", text: "写真を取れ!", hint: "近くで光る写真へ", duration: 4500 },
-  { type: "safe", text: "よけろ!", hint: "十字キーだけで回避", duration: 3500 },
-];
-
-function availableOrders() {
-  const byArea = [
-    ["jump", "attack3", "dash", "freeze", "collect"],
-    ["jump", "smash", "back", "nojump", "safe"],
-    ["smash", "collect", "attack3", "safe", "dash"],
-    ["jump", "freeze", "dash", "nojump", "back"],
-    ORDER_POOL.map((order) => order.type),
-  ];
-  return ORDER_POOL.filter((order) => byArea[state.area].includes(order.type));
-}
-
-function startOrder(now) {
-  if (state.challenge || state.dying || now < state.bannerUntil || now < state.bossAlertUntil) return;
-  let template;
-  do { template = pick(availableOrders()); }
-  while (template.type === state.lastOrder && availableOrders().length > 1);
-  state.lastOrder = template.type;
-  state.challenge = {
-    ...template,
-    phase: "intro",
-    introUntil: now + 520,
-    startedAt: now + 520,
-    deadline: now + 520 + template.duration,
-    startX: state.player.x,
-    count: 0,
-    targetId: null,
-  };
-
-  if (template.type === "smash") {
-    const enemy = makeEnemy(Math.min(state.player.x + 270, AREAS[state.area].end - 260), "cable", false, false, { speed: 18 });
-    enemy.orderTarget = true;
-    state.enemies.push(enemy);
-    state.challenge.targetId = enemy.id;
-  }
-  if (template.type === "collect") {
-    const pickup = { id: `order-${now}`, x: state.player.x + 220, y: GROUND - 100, w: 58, h: 76, photo: 7, active: true, special: true };
-    state.pickups.push(pickup);
-    state.challenge.targetId = pickup.id;
-  }
-
-  els.orderText.textContent = template.text;
-  els.orderHint.textContent = template.hint;
-  els.orderTimer.style.transform = "scaleX(1)";
-  els.orderCard.className = "order-card show";
-  sound("order");
-}
-
-function finishOrder(success, message) {
-  const challenge = state.challenge;
-  if (!challenge || !["intro", "play"].includes(challenge.phase)) return;
-  challenge.phase = "result";
-  challenge.resultUntil = performance.now() + 760;
-  els.orderCard.className = "order-card";
-  els.orderResult.className = `order-result ${success ? "" : "bad"} show`.trim();
-  els.orderResultLabel.textContent = success ? "ORDER CLEAR" : "ORDER MISS";
-  els.orderResultText.textContent = message || (success ? "できた!" : "失敗!");
-  if (success) {
-    const points = 700 + state.streak * 90 + state.area * 150;
-    state.score += points;
-    state.streak += 1;
-    state.maxStreak = Math.max(state.maxStreak, state.streak);
-    state.orderWins += 1;
-    els.orderResultScore.textContent = `+${points}`;
-    burst(state.player.x, state.player.y + 50, AREAS[state.area].color, 22);
-    sound("clear");
-    vibrate(25);
-  } else {
-    state.streak = 0;
-    state.lives -= 1;
-    els.orderResultScore.textContent = `残り ${state.lives}`;
-    shakeScreen();
-    sound("hurt");
-    vibrate([45, 30, 55]);
-    if (state.lives <= 0) beginGameOver();
-  }
-  updateHud();
-}
-
-function updateOrder(now) {
-  const challenge = state.challenge;
-  if (!challenge) {
-    if (state.time >= state.nextOrderAt) startOrder(now);
-    return;
-  }
-  if (challenge.phase === "intro" && now >= challenge.introUntil) {
-    challenge.phase = "play";
-    els.orderCard.className = "order-card active";
-  }
-  if (challenge.phase === "play") {
-    const remaining = clamp((challenge.deadline - now) / challenge.duration, 0, 1);
-    els.orderTimer.style.transform = `scaleX(${remaining})`;
-    if (challenge.type === "dash" && state.player.x - challenge.startX > 245) finishOrder(true, "爆走!");
-    if (challenge.type === "back" && challenge.startX - state.player.x > 105) finishOrder(true, "逆走成功!");
-    if (challenge.type === "freeze" && now > challenge.startedAt + 330) {
-      const moving = Math.abs(state.player.vx) > 42 || state.controls.left || state.controls.right || state.controls.down || state.keys.has("ArrowLeft") || state.keys.has("ArrowRight") || state.keys.has("ArrowDown");
-      if (moving) finishOrder(false, "動いたァ!");
-    }
-    if (now >= challenge.deadline && challenge.phase === "play") {
-      if (["freeze", "nojump", "safe"].includes(challenge.type)) finishOrder(true, "耐えた!");
-      else finishOrder(false, "間に合わない!");
-    }
-  }
-  if (challenge.phase === "result" && now >= challenge.resultUntil) {
-    els.orderResult.className = "order-result";
-    state.challenge = null;
-    state.nextOrderAt = state.time + 3000;
-  }
 }
 
 function playerDirection() {
@@ -488,13 +323,10 @@ function playerDirection() {
 
 function updatePlayer(dt) {
   const player = state.player;
-  const manualDirection = playerDirection();
-  const orderType = ["intro", "play"].includes(state.challenge?.phase) ? state.challenge.type : "";
-  const autoRun = state.assist.autoRun && state.time > 1350 && performance.now() >= state.bannerUntil && !["freeze", "back"].includes(orderType);
-  const direction = manualDirection || (autoRun ? 1 : 0);
-  const maxSpeed = manualDirection > 0 ? 380 : manualDirection < 0 ? 340 : 220;
+  const direction = playerDirection();
+  const maxSpeed = direction > 0 ? 410 : 365;
   if (direction) {
-    player.vx += direction * (manualDirection ? 1900 : 900) * dt;
+    player.vx += direction * 2100 * dt;
     player.vx = clamp(player.vx, -maxSpeed, maxSpeed);
     player.facing = direction;
     player.runTime += dt;
@@ -576,7 +408,6 @@ function hitEnemy(enemy) {
   enemy.alive = false;
   state.score += enemy.boss ? 2500 : 320;
   state.kills += 1;
-  if (isOrderPlaying("smash") && state.challenge.targetId === enemy.id) finishOrder(true, "粉砕!");
   if (enemy.final) {
     state.won = true;
     state.dying = true;
@@ -639,12 +470,11 @@ function updatePickups() {
     if (!pickup.active) return;
     if (rectsOverlap(playerHitbox(-7, -4), pickup)) {
       pickup.active = false;
-      state.score += pickup.special ? 700 : 180;
-      if (!pickup.special) state.photosCollected += 1;
+      state.score += 220;
+      state.treasures += 1;
       burst(pickup.x, pickup.y + 25, "#e3ff38", 12);
       sound("coin");
-      if (isOrderPlaying("collect") && state.challenge.targetId === pickup.id) finishOrder(true, "回収!");
-      if (!pickup.special && state.photosCollected % 5 === 0 && state.lives < state.maxLives) {
+      if (state.treasures % 8 === 0 && state.lives < state.maxLives) {
         state.lives += 1;
         burst(state.player.x, state.player.y + 40, "#39eaff", 24);
         sound("clear");
@@ -677,13 +507,11 @@ function hurtPlayer(message) {
   player.vy = -390;
   player.vx = -player.facing * 240;
   state.lives -= 1;
-  state.streak = 0;
   state.flash = .24;
   shakeScreen();
   burst(player.x, player.y + 65, "#ff386c", 18);
   sound("hurt");
   vibrate([55, 35, 70]);
-  if (isOrderPlaying("safe")) finishOrder(false, message);
   if (state.lives <= 0) beginGameOver();
   updateHud();
 }
@@ -715,15 +543,15 @@ function endRun() {
   els.topBest.textContent = padded(best);
   els.finalArea.textContent = AREAS[state.area].name;
   els.finalKills.textContent = state.kills;
-  els.finalOrders.textContent = state.orderWins;
+  els.finalTreasures.textContent = state.treasures;
   els.finalScore.textContent = padded(state.score);
 
   const progress = state.player.x / WORLD_END;
   let rank = "D", title = "路地裏ランナー", comment = "走る、跳ぶ、殴る。まずはそこからだ。";
-  if (progress >= .2 || state.score >= 5000) [rank, title, comment] = ["C", "写真街の暴走客", "無茶振りに少しだけ反応できる脚になった。"];
-  if (progress >= .45 || state.score >= 12000) [rank, title, comment] = ["B", "コード沼の破壊者", "障害物を見ると、先に拳が出る。"];
-  if (progress >= .75 || state.score >= 22000) [rank, title, comment] = ["A", "師範ワールド走破者", "ルールが変わるほど速くなる。かなり危険だ。"];
-  if (state.won) [rank, title, comment] = ["S", "無茶振りアクション師範", "世界のほうが先に音を上げた。完全走破!"];
+  if (progress >= .2 || state.score >= 5000) [rank, title, comment] = ["C", "歯車街の拳士", "パンチの間合いが見えてきた。"];
+  if (progress >= .45 || state.score >= 12000) [rank, title, comment] = ["B", "宝石ハンター", "高い足場の宝石まで逃さない。"];
+  if (progress >= .75 || state.score >= 22000) [rank, title, comment] = ["A", "師範ワールド走破者", "ボスを見ると先に拳が出る。かなり強い。"];
+  if (state.won) [rank, title, comment] = ["S", "ドット拳の大師範", "5地区を完全走破。世界のほうが先に音を上げた!"];
   els.rank.textContent = rank;
   els.rankTitle.textContent = title;
   els.resultComment.textContent = comment;
@@ -780,7 +608,6 @@ function loop(now) {
   updatePickups();
   updateParticles(dt);
   updateArea();
-  updateOrder(now);
   state.cameraX += (clamp(state.player.x - VIEW_W * .31, 0, WORLD_END - VIEW_W) - state.cameraX) * Math.min(1, dt * 5.5);
   state.score += Math.max(0, state.player.vx) * dt * .025;
   if (state.time >= state.nextHudAt) {
@@ -791,25 +618,34 @@ function loop(now) {
   frame = requestAnimationFrame(loop);
 }
 
-function drawCover(image, x, y, w, h, target = ctx) {
-  if (!image?.complete || !image.naturalWidth) return;
-  const scale = Math.max(w / image.naturalWidth, h / image.naturalHeight);
-  const sw = w / scale;
-  const sh = h / scale;
-  const sx = (image.naturalWidth - sw) / 2;
-  const sy = (image.naturalHeight - sh) / 2;
-  target.drawImage(image, sx, sy, sw, sh, x, y, w, h);
-}
+function drawSky(area) {
+  const sky = ctx.createLinearGradient(0, 0, 0, VIEW_H);
+  sky.addColorStop(0, area.skyTop);
+  sky.addColorStop(1, area.skyBottom);
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, VIEW_W, VIEW_H);
 
-function cachedBackground(key) {
-  const cacheKey = `${key}-${VIEW_W}-${VIEW_H}`;
-  if (backgroundCache.has(cacheKey)) return backgroundCache.get(cacheKey);
-  const canvas = document.createElement("canvas");
-  canvas.width = VIEW_W;
-  canvas.height = VIEW_H;
-  drawCover(images[key], 0, 0, VIEW_W, VIEW_H, canvas.getContext("2d"));
-  backgroundCache.set(cacheKey, canvas);
-  return canvas;
+  const celestialX = VIEW_W * .78 - state.cameraX * .025;
+  const celestialY = 120 + state.area * 9;
+  ctx.save();
+  ctx.globalAlpha = .82;
+  ctx.fillStyle = state.area === 2 ? "#ffae27" : state.area === 3 ? "#dffbff" : "#fff4a8";
+  ctx.shadowColor = area.color;
+  ctx.shadowBlur = 35;
+  ctx.beginPath();
+  ctx.arc(celestialX, celestialY, state.area === 4 ? 72 : 50, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.globalAlpha = .45;
+  ctx.fillStyle = "#fff9e8";
+  const starOffset = (state.cameraX * .06) % 160;
+  for (let x = -starOffset; x < VIEW_W + 160; x += 160) {
+    const y = 45 + (Math.abs(Math.sin(x * .031 + state.area)) * 210);
+    ctx.fillRect(Math.round(x), Math.round(y), 4, 4);
+    ctx.fillRect(Math.round(x + 52), Math.round(y + 38), 2, 2);
+  }
+  ctx.globalAlpha = 1;
 }
 
 function draw() {
@@ -819,9 +655,7 @@ function draw() {
   ctx.save();
   ctx.translate(shakeX, shakeY);
   ctx.clearRect(-20, -20, VIEW_W + 40, VIEW_H + 40);
-  ctx.drawImage(cachedBackground(area.bg), 0, 0);
-  ctx.fillStyle = state.area === 0 ? "rgba(6,5,11,.28)" : "rgba(6,5,11,.42)";
-  ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+  drawSky(area);
 
   drawParallax(area);
   drawGround(area);
@@ -853,7 +687,20 @@ function drawParallax(area) {
   ctx.fillStyle = area.color;
   ctx.strokeStyle = area.color;
 
-  if (area.shape === "cable") {
+  if (area.shape === "city") {
+    for (let x = offset - 280; x < VIEW_W + 280; x += 280) {
+      const heights = [230, 340, 185, 285];
+      heights.forEach((height, index) => {
+        const left = x + index * 72;
+        ctx.fillRect(left, GROUND - height, 58, height);
+        ctx.save();
+        ctx.globalAlpha = .65;
+        ctx.fillStyle = "#fff4a8";
+        for (let y = GROUND - height + 24; y < GROUND - 30; y += 38) ctx.fillRect(left + 15, y, 9, 13);
+        ctx.restore();
+      });
+    }
+  } else if (area.shape === "cable") {
     ctx.lineWidth = 20;
     for (let x = offset - 280; x < VIEW_W + 280; x += 280) {
       ctx.beginPath();
@@ -940,18 +787,47 @@ function drawPlatforms(area) {
 function drawDecorations() {
   state.decorations.forEach((item) => {
     const x = item.x - state.cameraX * .92;
-    if (x < -130 || x > VIEW_W + 130) return;
-    const image = images[`photo${item.photo}`];
-    if (!image) return;
+    if (x < -180 || x > VIEW_W + 180) return;
+    const color = AREAS[item.area]?.color || "#39eaff";
     ctx.save();
     ctx.translate(x, item.y);
     ctx.scale(item.scale || 1, item.scale || 1);
-    ctx.rotate(Math.sin(item.x) * .035);
-    ctx.fillStyle = item.photo % 2 ? "#fff9e8" : "#e3ff38";
-    ctx.fillRect(-54, -72, 108, 144);
-    ctx.drawImage(image, -48, -66, 96, 119);
-    ctx.fillStyle = "#08070e";
-    ctx.fillRect(-35, 59, 70, 5);
+    ctx.globalAlpha = .72;
+    ctx.fillStyle = "#0b0a16";
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 7;
+    if (item.kind === "tower") {
+      ctx.fillRect(-46, -145, 92, 250);
+      ctx.strokeRect(-46, -145, 92, 250);
+      ctx.fillStyle = color;
+      for (let y = -114; y < 82; y += 45) {
+        ctx.fillRect(-28, y, 14, 20);
+        ctx.fillRect(14, y, 14, 20);
+      }
+      ctx.beginPath();
+      ctx.moveTo(-56, -145); ctx.lineTo(0, -205); ctx.lineTo(56, -145); ctx.closePath(); ctx.fill();
+    } else if (item.kind === "pipe") {
+      ctx.lineWidth = 25;
+      ctx.lineCap = "square";
+      ctx.beginPath();
+      ctx.moveTo(-62, 105); ctx.lineTo(-62, -70); ctx.lineTo(48, -70); ctx.lineTo(48, -135); ctx.stroke();
+      ctx.fillStyle = color;
+      ctx.fillRect(25, -160, 47, 30);
+      ctx.fillRect(-84, 82, 44, 30);
+    } else if (item.kind === "sign") {
+      ctx.fillRect(-9, -5, 18, 130);
+      ctx.fillRect(-70, -108, 140, 104);
+      ctx.strokeRect(-70, -108, 140, 104);
+      ctx.fillStyle = color;
+      ctx.font = "950 39px Arial Black";
+      ctx.textAlign = "center";
+      ctx.fillText(item.area === 4 ? "師" : "→", 0, -42);
+    } else {
+      ctx.fillRect(-62, -28, 124, 124);
+      ctx.strokeRect(-62, -28, 124, 124);
+      ctx.beginPath();
+      ctx.moveTo(-58, -23); ctx.lineTo(58, 91); ctx.moveTo(58, -23); ctx.lineTo(-58, 91); ctx.stroke();
+    }
     ctx.restore();
   });
 }
@@ -963,13 +839,20 @@ function drawPickups() {
     if (x < -80 || x > VIEW_W + 80) return;
     const bob = Math.sin(state.time / 170 + pickup.x) * 8;
     ctx.save();
-    ctx.translate(x, pickup.y + bob);
-    ctx.shadowColor = pickup.special ? "#e3ff38" : "#39eaff";
-    ctx.shadowBlur = pickup.special ? 28 : 13;
-    ctx.fillStyle = pickup.special ? "#e3ff38" : "#fff9e8";
-    ctx.fillRect(-pickup.w / 2, -pickup.h / 2, pickup.w, pickup.h);
-    const image = images[`photo${pickup.photo}`];
-    if (image) ctx.drawImage(image, -pickup.w / 2 + 4, -pickup.h / 2 + 4, pickup.w - 8, pickup.h - 17);
+    ctx.translate(x + pickup.w / 2, pickup.y + pickup.h / 2 + bob);
+    ctx.scale(.78 + Math.abs(Math.sin(state.time / 230 + pickup.x)) * .22, 1);
+    const palette = ["#39eaff", "#e3ff38", "#ff386c", "#ffae27"];
+    const color = palette[pickup.gem % palette.length];
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 24;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(0, -31); ctx.lineTo(24, -8); ctx.lineTo(14, 24); ctx.lineTo(0, 34); ctx.lineTo(-14, 24); ctx.lineTo(-24, -8); ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,.75)";
+    ctx.beginPath();
+    ctx.moveTo(0, -24); ctx.lineTo(15, -7); ctx.lineTo(3, -2); ctx.lineTo(-6, 18); ctx.lineTo(-14, -7); ctx.closePath();
+    ctx.fill();
     ctx.restore();
   });
 }
@@ -981,33 +864,38 @@ function drawEnemies() {
     if (x < -240 || x > VIEW_W + 240) return;
     ctx.save();
     ctx.translate(x + enemy.w / 2, enemy.y + enemy.h / 2);
-    if (enemy.orderTarget) {
-      ctx.strokeStyle = "#ff386c";
-      ctx.lineWidth = 8;
-      ctx.beginPath();
-      ctx.arc(0, 0, Math.max(enemy.w, enemy.h) * .62 + Math.sin(state.time / 90) * 7, 0, Math.PI * 2);
-      ctx.stroke();
-    }
     if (enemy.boss) {
-      ctx.shadowColor = enemy.final ? "#ff386c" : "#ffae27";
+      const bossColor = enemy.final ? "#ff386c" : "#ffae27";
+      const pulse = Math.sin(state.time / 120) * 5;
+      ctx.shadowColor = bossColor;
       ctx.shadowBlur = 28;
-      ctx.fillStyle = "rgba(8,7,14,.88)";
+      ctx.fillStyle = "#090812";
+      ctx.strokeStyle = bossColor;
+      ctx.lineWidth = enemy.final ? 11 : 8;
       ctx.beginPath();
-      ctx.arc(0, 0, Math.max(enemy.w, enemy.h) * .48, 0, Math.PI * 2);
+      ctx.roundRect(-enemy.w * .46, -enemy.h * .45, enemy.w * .92, enemy.h * .82, 24);
       ctx.fill();
-      const image = images[enemy.final ? "photo3" : `photo${state.area + 1}`];
-      if (image) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(0, 0, Math.max(enemy.w, enemy.h) * .42, 0, Math.PI * 2);
-        ctx.clip();
-        ctx.drawImage(image, -enemy.w * .62, -enemy.h * .55, enemy.w * 1.24, enemy.h * 1.18);
-        ctx.restore();
-      }
-      ctx.fillStyle = enemy.final ? "#ff386c" : "#ffae27";
-      ctx.font = "950 18px Arial Black";
+      ctx.stroke();
+      ctx.fillStyle = bossColor;
+      ctx.fillRect(-enemy.w * .34, -enemy.h * .22, enemy.w * .68, enemy.h * .24);
+      ctx.fillStyle = "#fff9e8";
+      ctx.fillRect(-enemy.w * .22, -enemy.h * .14, enemy.w * .12, enemy.h * .08);
+      ctx.fillRect(enemy.w * .1, -enemy.h * .14, enemy.w * .12, enemy.h * .08);
+      ctx.fillStyle = "#090812";
+      ctx.fillRect(-enemy.w * .18 + pulse * .15, -enemy.h * .115, enemy.w * .055, enemy.h * .035);
+      ctx.fillRect(enemy.w * .14 + pulse * .15, -enemy.h * .115, enemy.w * .055, enemy.h * .035);
+      ctx.fillStyle = bossColor;
+      ctx.beginPath();
+      ctx.moveTo(-enemy.w * .24, enemy.h * .09); ctx.lineTo(0, enemy.h * .22); ctx.lineTo(enemy.w * .24, enemy.h * .09); ctx.closePath(); ctx.fill();
+      ctx.fillRect(-enemy.w * .62, -enemy.h * .18, enemy.w * .18, enemy.h * .38);
+      ctx.fillRect(enemy.w * .44, -enemy.h * .18, enemy.w * .18, enemy.h * .38);
+      ctx.fillStyle = "#fff9e8";
+      ctx.font = `950 ${enemy.final ? 42 : 29}px Arial Black`;
       ctx.textAlign = "center";
-      ctx.fillText(enemy.final ? "FINAL" : "BOSS", 0, enemy.h * .49);
+      ctx.fillText(enemy.final ? "師" : "門", 0, enemy.h * .04);
+      ctx.fillStyle = bossColor;
+      ctx.font = "950 16px Arial Black";
+      ctx.fillText(enemy.final ? "FINAL SHIHAN" : "AREA BOSS", 0, enemy.h * .48);
     } else if (enemy.type === "pen") {
       ctx.rotate(-.18);
       ctx.fillStyle = "#39eaff";
@@ -1061,23 +949,38 @@ function drawPlayer() {
   const x = player.x - state.cameraX;
   const airborne = !player.onGround;
   const running = Math.abs(player.vx) > 55;
-  const sprite = player.stomping ? images.back : player.attackTimer > 0 ? images.wing : airborne ? images.wing : running ? images.dash : images.stand;
-  const bob = running && player.onGround ? Math.sin(player.runTime * 18) * 7 : 0;
+  let frameIndex = 0;
+  if (player.invulnerable > 1.25) frameIndex = 7;
+  else if (player.stomping) frameIndex = 6;
+  else if (player.attackTimer > .22) frameIndex = 4;
+  else if (player.attackTimer > 0) frameIndex = 5;
+  else if (airborne) frameIndex = 3;
+  else if (running) frameIndex = Math.floor(player.runTime * 10) % 2 ? 1 : 2;
+  const bob = running && player.onGround ? Math.sin(player.runTime * 20) * 3 : 0;
   ctx.save();
   ctx.translate(x, player.y + player.h + bob);
   ctx.scale(player.facing, 1);
-  if (player.stomping) ctx.rotate(Math.PI);
-  else if (player.attackTimer > 0) ctx.rotate(-player.facing * .12);
   if (player.invulnerable > 0 && Math.floor(state.time / 80) % 2) ctx.globalAlpha = .3;
   ctx.shadowColor = player.attackTimer > 0 ? "#e3ff38" : "rgba(0,0,0,.7)";
   ctx.shadowBlur = player.attackTimer > 0 ? 28 : 18;
-  if (sprite) ctx.drawImage(sprite, -player.w * .7, -player.h, player.w * 1.4, player.h);
-  else { ctx.fillStyle = "#fff9e8"; ctx.fillRect(-player.w / 2, -player.h, player.w, player.h); }
-  if (player.attackTimer > 0) {
+  const sheet = images.pixelHero;
+  if (sheet?.naturalWidth) {
+    const cellW = sheet.naturalWidth / 4;
+    const cellH = sheet.naturalHeight / 2;
+    const column = frameIndex % 4;
+    const row = Math.floor(frameIndex / 4);
+    const drawW = 174;
+    const drawH = 232;
+    ctx.drawImage(sheet, column * cellW, row * cellH, cellW, cellH, -drawW / 2, -drawH + 27, drawW, drawH);
+  } else {
+    ctx.fillStyle = "#fff9e8";
+    ctx.fillRect(-player.w / 2, -player.h, player.w, player.h);
+  }
+  if (player.attackTimer > 0 && player.attackTimer < .22) {
     ctx.strokeStyle = "#e3ff38";
-    ctx.lineWidth = 13;
+    ctx.lineWidth = 9;
     ctx.beginPath();
-    ctx.arc(player.w * .62, -player.h * .52, 52, -1.4, 1.35);
+    ctx.arc(player.w * .8, -player.h * .54, 45, -1.35, 1.25);
     ctx.stroke();
   }
   ctx.restore();
@@ -1168,21 +1071,11 @@ els.sound.addEventListener("click", () => {
 els.share.addEventListener("click", async () => {
   const sharedUrl = new URL(location.href);
   sharedUrl.searchParams.set("seed", state.world.seed);
-  const text = `無茶振り！師範ランで${AREAS[state.area].name}まで到達、${Math.round(state.score)}点！\nWORLD #${state.world.code}\n${sharedUrl}`;
+  const text = `師範ワールド2Dで${AREAS[state.area].name}まで到達、宝石${state.treasures}個、${Math.round(state.score)}点！\nWORLD #${state.world.code}\n${sharedUrl}`;
   try { await navigator.clipboard.writeText(text); els.share.textContent = "コピーした!"; }
   catch { window.prompt("結果をコピー", text); }
   window.setTimeout(() => { els.share.textContent = "結果をコピー"; }, 1400);
 });
-
-function startTitleReel() {
-  let index = 6;
-  clearInterval(titleReelTimer);
-  titleReelTimer = window.setInterval(() => {
-    if (els.title.hidden) return;
-    index = (index + 1) % PHOTO_SRCS.length;
-    els.titleReel.src = PHOTO_SRCS[index];
-  }, 430);
-}
 
 loadAssets();
 configureCanvas();
@@ -1190,4 +1083,3 @@ resetState();
 state.playing = false;
 els.topBest.textContent = padded(safeBest());
 showScreen(els.title);
-startTitleReel();
